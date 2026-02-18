@@ -1,0 +1,373 @@
+🚀 Next.js Task List – Employee Management System
+🧱 Phase 1: Project Setup
+
+Initialize Next.js app
+
+npx create-next-app@latest ems
+
+Setup App Router (/app)
+
+Configure environment variables (.env) 
+
+Install dependencies 
+
+Auth (NextAuth / custom JWT) 
+
+Validation (React Hook Form) 
+
+UI (Tailwind)
+
+---------------------------------------------------------
+Phase 1 completed
+---------------------------------------------------------
+
+🔐 Phase 2: Authentication & Access
+Backend Tasks (API / Server Actions)
+
+Create User model    (Done)
+
+id, name, email, password, role, isActive
+
+Hash passwords (bcrypt)   (Done)
+
+Implement login API    (Done)
+
+Implement logout    (Done)
+
+Create middleware for route protection (Not Completed)
+
+Role-based access middleware (Super Admin only)
+
+Frontend Tasks
+
+Login page UI   (Done)
+
+Protect admin routes  (Done)
+
+Show error & success messages  (Done) 
+
+👥 Employee Account Management 
+Backend
+
+API: Create employee account (Not Completed)
+
+API: Update employee account (Not Completed)
+
+API: Delete employee account (soft delete) (Not Completed)
+
+API: Reset password (Not Completed)
+
+API: Activate / deactivate user (Not Completed)
+
+Role & permission checks (Not Completed)
+
+Frontend
+
+Employee list page (Need to update or create new)
+
+Add employee form (Not Completed)
+
+Edit employee form (Not Completed)
+
+Activate/deactivate toggle (Not Completed)
+
+Reset password button (Not Completed)
+
+👤 Phase 3: Employee Management
+Backend
+
+Employee schema
+
+name, email, phone, departmentId, roleId, salary
+
+API: Add employee details
+
+API: Edit employee profile
+
+API: Fetch all employees
+
+API: Archive employee (soft delete)
+
+Frontend
+
+Employee dashboard page
+
+Table with pagination & search
+
+View employee details page
+
+Edit employee modal/page
+
+Delete/archive confirmation dialog
+
+🏢 Phase 4: Department & Role Management
+Backend
+
+Department model
+
+id, name, description
+
+Role model
+
+id, name, permissions
+
+API: Create department
+
+API: Update department
+
+API: Delete department
+
+API: Create role
+
+API: Update role
+
+API: Delete role
+
+API: Assign department & role to employee
+
+Frontend
+
+Department management page
+
+Add/edit/delete department UI
+
+Role management page
+
+Add/edit/delete role UI
+
+Assign role & department dropdown in employee form
+
+🔑 Phase 5: Authorization (RBAC)
+Backend
+
+Permission-based access control
+
+Map roles → permissions
+
+Middleware to restrict API access
+
+Protect pages using server-side checks
+
+Frontend
+
+Hide UI actions based on role
+
+Prevent unauthorized navigation
+
+📁 Phase 6: Database & Validation
+
+Define schemas using Prisma/Mongoose
+
+Add indexes & relations
+
+Input validation using Zod
+
+Error handling & logging
+
+🧪 Phase 7: Testing
+
+Unit tests for APIs
+
+Role-based access tests
+
+Form validation tests
+
+📦 Phase 8: Final Touches
+
+Toast notifications
+
+Loading states
+
+Audit logs (optional)
+
+Deployment (Vercel)
+
+Admin seed user
+
+
+⏭️ Next Tasks for Employee Management System (Next.js)
+📊 Phase 9: Dashboard & Overview
+Backend Tasks
+
+API: Fetch total employees
+
+API: Fetch active vs inactive users
+
+API: Employees per department
+
+API: Recent employee activity
+
+Frontend Tasks
+
+Admin dashboard page
+
+KPI cards (Total Employees, Departments, Roles)
+
+Charts (Bar / Pie)
+
+Recent activity table
+
+🕒 Phase 10: Attendance Management
+Backend
+
+Attendance model
+
+userId, date, checkIn, checkOut, status
+
+API: Mark attendance
+
+API: Fetch attendance by employee
+
+API: Fetch all attendance (admin)
+
+API: Update attendance (admin)
+
+Frontend
+
+Employee check-in / check-out UI
+
+Attendance history page
+
+Admin attendance management page
+
+Filters by date / employee
+
+📝 Phase 11: Leave Management
+Backend
+
+Leave model
+
+userId, leaveType, startDate, endDate, reason, status
+
+API: Apply for leave
+
+API: Approve / reject leave
+
+API: Fetch leave requests
+
+Frontend
+
+Apply leave form
+
+Leave history page
+
+Admin leave approval table
+
+Status badges (Pending / Approved / Rejected)
+
+💼 Phase 12: Task / Project Management
+Backend
+
+Project model
+
+Task model
+
+title, description, priority, status, assignedTo
+
+API: Create project
+
+API: Assign tasks
+
+API: Update task status
+
+Frontend
+
+Project list page
+
+Task assignment UI
+
+Employee task dashboard
+
+Drag & drop task status (optional)
+
+💰 Phase 13: Payroll Management (Optional but Impressive)
+Backend
+
+Payroll model
+
+Salary calculation logic
+
+API: Generate payroll
+
+API: Fetch payslip
+
+Frontend
+
+Payroll list (admin)
+
+Employee payslip view
+
+Download payslip (PDF)
+
+🔔 Phase 14: Notifications
+Backend
+
+Notification model
+
+API: Create notification
+
+API: Fetch notifications
+
+WebSocket / polling setup
+
+Frontend
+
+Notification bell
+
+Real-time alerts
+
+Mark as read
+
+🛡️ Phase 15: Security & Audit Logs
+Backend
+
+Audit log model
+
+Log admin actions
+
+Track login attempts
+
+Frontend
+
+Audit log viewer (admin)
+
+Filters & search
+
+⚙️ Phase 16: System Settings
+Backend
+
+Company settings model
+
+Working hours config
+
+Leave policies
+
+Frontend
+
+Settings page
+
+Update company info
+
+Policy management UI
+
+🧪 Phase 17: Testing & Optimization
+
+API testing
+
+RBAC test cases
+
+Performance optimization
+
+Database indexing
+
+🚀 Phase 18: Deployment & Finalization
+
+Environment configs
+
+Seed Super Admin
+
+CI/CD (optional)
+
+Deploy to Vercel
+
+Production database

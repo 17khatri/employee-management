@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { loginUser } from "./services/auth.service";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,14 @@ export default function Home() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, []);
+
   const onSubmit = async (data: any) => {
     setLoading(true);
     setError("");
@@ -34,7 +42,7 @@ export default function Home() {
       localStorage.setItem("token", result.token);
       setUser(result.user);
       toast.success("Login successful!");
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Invalid email or password");
     } finally {

@@ -12,6 +12,7 @@ import {
 } from "@/app/services/auth.service";
 import { ROLE_VALUES } from "@/app/constants/roles";
 import toast from "react-hot-toast";
+import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
 
 interface User {
   _id: string;
@@ -85,28 +86,38 @@ export default function UserPage() {
 
   const onSubmit = async (data: any) => {
     try {
+      const payload =
+        data.role === "admin"
+          ? {
+              name: data.name,
+              email: data.email,
+              isActive: data.isActive,
+              role: data.role,
+            }
+          : {
+              name: data.name,
+              email: data.email,
+              isActive: data.isActive,
+              role: data.role,
+              departmentId: data.departmentId,
+              salary: Number(data.salary),
+              phone: data.phone,
+            };
       if (editingUser) {
-        await editUser(editingUser._id, data);
+        await editUser(editingUser._id, payload);
         toast.success("User updated successfully!");
       } else {
-        await addUser(data);
+        await addUser(payload); // 🔥 Correct
         toast.success("User added successfully!");
       }
+
       fetchUsers();
       setShowModal(false);
-      resetForm({
-        name: "",
-        email: "",
-        isActive: false,
-        role: "",
-        departmentId: "",
-        salary: "",
-        phone: "",
-      });
+      resetForm();
       setEditingUser(null);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Failed to add user");
+      toast.error(error.response?.data?.message || "Failed to save user");
     }
   };
 
@@ -167,8 +178,9 @@ export default function UserPage() {
           <h1 className="text-Sxl font-bold">Users</h1>
           <button
             onClick={handleModalOpen}
-            className="px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
+            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
           >
+            <MdAdd className="text-sm" />
             Add User
           </button>
         </div>
@@ -399,20 +411,20 @@ export default function UserPage() {
                     <td className="p-3 capitalize">
                       {user.isActive ? "Yes" : "No"}
                     </td>
-                    <td className="p-3">
+                    <td className="flex p-3">
                       <button
                         onClick={() => handleEdit(user)}
-                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+                        className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
                       >
-                        Edit
+                        <MdEdit className="text-sm" /> Edit
                       </button>
                       <button
                         onClick={() => {
                           handleDelete(user._id);
                         }}
-                        className="ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                        className="flex ml-2 px-3 py-1 gap-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
                       >
-                        Delete
+                        <MdDelete className="text-sm" /> Delete
                       </button>
                     </td>
                   </tr>

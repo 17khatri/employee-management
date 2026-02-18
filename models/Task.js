@@ -15,6 +15,11 @@ const TaskSchema = new mongoose.Schema({
     enum: TASK_STATUS_VALUES,
     default: TASK_STATUSES.PENDING,
   },
+  projectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project",
+    required: true,
+  },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee",

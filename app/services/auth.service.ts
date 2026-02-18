@@ -76,6 +76,7 @@ export const addTask = async (data: {
     description: string;
     status: string;
     assignedTo: string;
+    projectId: string;
 }) => {
     const response = await axiosInstance.post("/tasks", data);
     return response.data;

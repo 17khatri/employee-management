@@ -1,17 +1,29 @@
 import mongoose from "mongoose";
 
-const ProjectSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
+const ProjectSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+    },
   },
-  description: {
-    type: String,
+  {
+    toJSON: {
+      virtuals: true,
+    },
+    toObject: {
+      virtuals: true,
+    },
   },
-  assignedTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Employee",
-  },
+);
+
+ProjectSchema.virtual("tasks", {
+  ref: "Task",
+  localField: "_id",
+  foreignField: "projectId",
 });
 
 const Project =

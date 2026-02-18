@@ -13,8 +13,16 @@ export async function GET(req) {
   try {
     await connectDB();
     const projects = await Project.find().populate({
-      path: "assignedTo",
-      populate: { path: "userId", select: "name email" },
+      path: "tasks",
+      select: "title description assignedTo",
+      populate: {
+        path: "assignedTo",
+        select: "userId",
+        populate: {
+          path: "userId",
+          select: "name email",
+        },
+      },
     });
     return NextResponse.json(projects, { status: 200 });
   } catch (error) {
@@ -31,7 +39,7 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    const { title, description, assignedTo } = await req.json();
+    const { title, description } = await req.json();
 
     if (!title) {
       return NextResponse.json(
@@ -43,7 +51,6 @@ export async function POST(req) {
     const newProject = new Project({
       title,
       description,
-      assignedTo,
     });
 
     await newProject.save();
@@ -62,11 +69,11 @@ export async function PATCH(req) {
   try {
     await connectDB();
 
-    const { id, title, description, assignedTo } = await req.json();
+    const { id, title, description } = await req.json();
 
     const updatedProject = await Project.findByIdAndUpdate(
       id,
-      { title, description, assignedTo },
+      { title, description },
       { new: true },
     );
 

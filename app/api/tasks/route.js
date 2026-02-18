@@ -13,10 +13,15 @@ export async function GET(req) {
   try {
     await connectDB();
 
-    const tasks = await Task.find().populate({
-      path: "assignedTo",
-      populate: { path: "userId", select: "name email" },
-    });
+    const tasks = await Task.find()
+      .populate({
+        path: "assignedTo",
+        populate: { path: "userId", select: "name email" },
+      })
+      .populate({
+        path: "projectId",
+        select: "title",
+      });
     return NextResponse.json(tasks, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -31,7 +36,8 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    const { title, description, status, assignedTo } = await req.json();
+    const { title, description, status, assignedTo, projectId } =
+      await req.json();
 
     if (!title) {
       return NextResponse.json(
@@ -45,6 +51,7 @@ export async function POST(req) {
       description,
       status,
       assignedTo,
+      projectId,
     });
 
     await newTask.save();
@@ -85,11 +92,12 @@ export async function PATCH(req) {
   try {
     await connectDB();
 
-    const { id, title, description, status, assignedTo } = await req.json();
+    const { id, title, description, status, assignedTo, projectId } =
+      await req.json();
 
     const updatedTask = await Task.findByIdAndUpdate(
       id,
-      { title, description, status, assignedTo },
+      { title, description, status, assignedTo, projectId },
       { new: true },
     );
 

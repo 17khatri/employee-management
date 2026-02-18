@@ -159,35 +159,3 @@ export async function PATCH(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
-// export async function PATCH(req) {
-//   try {
-//     await connectDB();
-
-//     const { userId, isActive } = await req.json();
-
-//     if (!userId || isActive === undefined) {
-//       return NextResponse.json(
-//         { message: "User ID and isActive are required" },
-//         { status: 400 },
-//       );
-//     }
-
-//     const user = await User.findByIdAndUpdate(
-//       userId,
-//       { isActive },
-//       { new: true },
-//     );
-
-//     if (!user) {
-//       return NextResponse.json({ message: "User not found" }, { status: 404 });
-//     }
-
-//     return NextResponse.json(
-//       { message: "User status updated successfully", user },
-//       { status: 200 },
-//     );
-//   } catch (error) {
-//     return NextResponse.json({ error: error.message }, { status: 500 });
-//   }
-// }

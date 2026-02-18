@@ -16,6 +16,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
+import { IoEye } from "react-icons/io5";
+import { MdDelete } from "react-icons/md";
 
 interface Employee {
   _id: string;
@@ -98,21 +100,23 @@ export default function EmployeesPage() {
       {
         header: "Action",
         cell: ({ row }) => (
-          <div>
+          <div className="flex">
             <button
               onClick={() => {
                 handleView(row.original._id);
               }}
-              className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+              className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
             >
+              <IoEye className="text-sm" />
               View
             </button>
             <button
               onClick={() => {
                 handleDelete(row.original._id);
               }}
-              className="ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+              className="flex items-center gap-1 ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
             >
+              <MdDelete className="text-sm" />
               Delete
             </button>
           </div>

@@ -118,3 +118,32 @@ export const editProject = async (id: any, data: {
     const response = await axiosInstance.patch(`/projects`, { id: id, ...data });
     return response.data;
 };
+
+
+export const getMeetings = async () => {
+    const response = await axiosInstance.get("/meetings");
+    return response.data;
+}
+
+export const addMeeting = async (data: {
+    createdBy: string;
+    title: string;
+    description: string;
+    date: string;
+    time: string;
+    attendees: string[];
+}) => {
+    const response = await axiosInstance.post("/meetings", data);
+    return response.data;
+};
+
+export const updateMeeting = async (id: any, data: {
+    title: string;
+    description: string;
+    date: string;
+    time: string;
+    attendees: string[];
+}) => {
+    const response = await axiosInstance.patch(`/meetings`, { id: id, ...data });
+    return response.data;
+};

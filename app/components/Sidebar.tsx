@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { useAuthStore } from "../store/auth.store";
 
 export default function Sidebar() {
+  const user = useAuthStore((state) => state.user);
+  const role = user?.role;
   return (
     <aside className="w-58 flex flex-col bg-gray-800 text-white p-4">
       <nav className="space-y-1 flex-1">
@@ -44,6 +47,13 @@ export default function Sidebar() {
           className="block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded"
         >
           Tasks
+        </Link>
+
+        <Link
+          href="/calendar"
+          className="block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded"
+        >
+          Calendar
         </Link>
 
         <Link

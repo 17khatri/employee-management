@@ -13,8 +13,13 @@ import { useEffect, useState } from "react";
 import { getUsers } from "../services/auth.service";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import Select from "react-select";
 import { Controller } from "react-hook-form";
+import TextField from "@mui/material/TextField";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import FormHelperText from "@mui/material/FormHelperText";
+import Select from "@mui/material/Select";
 
 export interface CalendarEvent {
   _id: string;
@@ -139,6 +144,9 @@ export default function Calendar() {
         dateClick={(info) => {
           reset();
           setEditingId(null);
+          const clickedDate = new Date(info.date);
+          const formattedDate = clickedDate.toISOString().split("T")[0];
+          setValue("date", formattedDate);
           setIsModalOpen(true);
         }}
         eventClick={(info) => {
@@ -165,65 +173,73 @@ export default function Calendar() {
               //   className="grid grid-cols-3 gap-8"
             >
               <div className="mb-3">
-                <label className="block text-sm mb-1">Title</label>
-                <input
+                <TextField
+                  size="small"
                   {...register("title", { required: "Title is required" })}
                   type="text"
                   className="w-full border p-2 rounded"
+                  label="Title"
+                  error={!!errors.title}
+                  helperText={errors.title ? errors.title.message : ""}
                 />
-                {errors.title && (
-                  <p className="text-red-500 text-sm">{errors.title.message}</p>
-                )}
               </div>
 
               <div className="mb-3">
-                <label className="block text-sm mb-1">Description</label>
-                <input
+                <TextField
+                  size="small"
                   {...register("description", {
                     required: "Description is required",
                   })}
                   type="text"
                   className="w-full border p-2 rounded"
+                  label="Description"
+                  error={!!errors.description}
+                  helperText={
+                    errors.description ? errors.description.message : ""
+                  }
                 />
-                {errors.description && (
-                  <p className="text-red-500 text-sm">
-                    {errors.description.message}
-                  </p>
-                )}
               </div>
 
               <div className="mb-3">
-                <label className="block text-sm mb-1">Attendees</label>
-                <Controller
-                  name="attendees"
-                  control={control}
-                  rules={{ required: "Select at least one attendee" }}
-                  render={({ field }) => (
-                    <Select<UserOption, true>
-                      isMulti
-                      options={users.map((user) => ({
-                        value: user._id,
-                        label: user.name,
-                      }))}
-                      onChange={(selected) =>
-                        field.onChange(selected.map((option) => option.value))
-                      }
-                      value={users
-                        .filter((user) => field.value?.includes(user._id))
-                        .map((user) => ({
-                          value: user._id,
-                          label: user.name,
-                        }))}
-                    />
-                  )}
-                />
+                <FormControl
+                  fullWidth
+                  margin="dense"
+                  error={!!errors.attendees}
+                >
+                  <InputLabel size="small" id="attendees-label">
+                    Attendees
+                  </InputLabel>
+
+                  <Controller
+                    name="attendees"
+                    control={control}
+                    defaultValue={[]}
+                    rules={{ required: "Select at least one attendee" }}
+                    render={({ field }) => (
+                      <Select
+                        multiple
+                        labelId="attendees-label"
+                        label="attendees"
+                        {...field}
+                        size="small"
+                      >
+                        {users.map((user) => (
+                          <MenuItem key={user._id} value={user._id}>
+                            {user.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
+                  />
+
+                  <FormHelperText>{errors.attendees?.message}</FormHelperText>
+                </FormControl>
               </div>
               <div className="mb-3">
                 <label className="block text-sm mb-1">Date</label>
                 <input
                   {...register("date", { required: "Date is required" })}
                   type="date"
-                  //   value={selectedDate || ""}
                   className="w-full border p-2 rounded"
                 />
                 {errors.date && (

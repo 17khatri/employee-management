@@ -18,8 +18,13 @@ import {
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
-import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
-import { IoEye } from "react-icons/io5";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 
 interface Task {
   _id: string;
@@ -114,33 +119,29 @@ export default function ProjectsPage() {
         header: "Action",
         cell: ({ row }) => (
           <div className="flex">
-            <button
+            <IconButton
+              color="primary"
               onClick={() => {
                 handleView(row.original);
               }}
-              className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
             >
-              <IoEye className="text-sm" />
-              View
-            </button>
-            <button
+              <VisibilityIcon className="text-sm" />
+            </IconButton>
+            <IconButton
               onClick={() => {
                 handleEdit(row.original);
               }}
-              className="flex items-center gap-1 px-3 ml-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
             >
-              <MdEdit className="text-sm" />
-              Edit
-            </button>
-            <button
+              <EditIcon className="text-sm" />
+            </IconButton>
+            <IconButton
+              color="error"
               onClick={() => {
                 handleDelete(row.original._id);
               }}
-              className="flex items-center gap-1 ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
             >
-              <MdDelete className="text-sm" />
-              Delete
-            </button>
+              <DeleteIcon className="text-sm" />
+            </IconButton>
           </div>
         ),
       },
@@ -230,17 +231,19 @@ export default function ProjectsPage() {
       <div className="p-4">
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-Sxl font-bold">Projects</h1>
-          <button
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
             onClick={handleModalOpen}
-            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
           >
-            <MdAdd className="text-sm" />
             Add Project
-          </button>
+          </Button>
         </div>
 
         {/* 🔍 Search Input */}
-        <input
+        <TextField
+          size="small"
           type="text"
           placeholder="Search..."
           value={globalFilter ?? ""}
@@ -373,60 +376,51 @@ export default function ProjectsPage() {
               {/* Form */}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Title
-                  </label>
-                  <input
+                  <TextField
+                    size="small"
                     {...register("title", { required: "Title is required" })}
                     type="text"
                     placeholder="Enter task title"
-                    className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                 focus:ring-indigo-400 outline-none transition"
+                    className="w-full"
+                    error={!!errors.title}
+                    helperText={errors.title ? errors.title.message : ""}
                   />
-                  {errors.title && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.title.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Descriptions
-                  </label>
-                  <input
+                  <TextField
+                    size="small"
                     {...register("description", {
                       required: "Description is required",
                     })}
                     placeholder="Enter description"
-                    className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                 focus:ring-indigo-400 outline-none transition"
+                    className="w-full"
+                    helperText={
+                      errors.description ? errors.description.message : ""
+                    }
+                    error={!!errors.description}
                   />
-                  {errors.description && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.description.message}
-                    </p>
-                  )}
                 </div>
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
-                  <button
+                  <Button
                     type="button"
                     onClick={handleModalClose}
                     className="px-5 py-2 rounded-xl border hover:bg-gray-100"
                   >
                     Cancel
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
+                    variant="contained"
                     type="submit"
                     className="px-6 py-2 rounded-xl bg-indigo-600 
                                  text-white font-semibold hover:bg-indigo-700 
                                  shadow-md hover:shadow-lg transition"
                   >
                     {editingProject ? "Update" : "Save"}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -437,7 +431,7 @@ export default function ProjectsPage() {
           <p>Loading...</p>
         ) : (
           <>
-            <table className="min-w-full bg-white shadow rounded">
+            <table className="min-w-full mt-2 bg-white shadow rounded">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr className="text-sm" key={headerGroup.id}>

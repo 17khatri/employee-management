@@ -6,21 +6,17 @@ const StudySchema = new mongoose.Schema({
     ref: "Employee",
     required: true,
   },
-  studyDetails: [
-    {
-      grade: {
-        type: String,
-        required: true,
-      },
-      percentage: {
-        type: String,
-      },
-      passingYear: {
-        type: String,
-        required: true,
-      },
-    },
-  ],
+  grade: {
+    type: String,
+    required: true,
+  },
+  percentage: {
+    type: String,
+  },
+  passingYear: {
+    type: String,
+    required: true,
+  },
 });
 
 const Study = mongoose.models.Study || mongoose.model("Study", StudySchema);

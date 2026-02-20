@@ -16,8 +16,12 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
-import { IoEye } from "react-icons/io5";
-import { MdDelete } from "react-icons/md";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DeleteIcon from "@mui/icons-material/Delete";
+import IconButton from "@mui/material/IconButton";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import AddIcon from "@mui/icons-material/Add";
 
 interface Employee {
   _id: string;
@@ -31,6 +35,13 @@ interface Employee {
   };
 }
 
+interface Studies {
+  employeeId: string;
+  grade: string;
+  percentage: string;
+  passingYear: number;
+}
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -39,6 +50,8 @@ export default function EmployeesPage() {
   );
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [addStudies, setAddStudies] = useState<Boolean>(false);
+  const [editingStudies, setEditingStudies] = useState<Studies | null>(null);
 
   const fetchEmployees = async () => {
     try {
@@ -79,6 +92,14 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleStudyModalOpen = () => {
+    setAddStudies(true);
+  };
+
+  const handleStudyModalClose = () => {
+    setAddStudies(false);
+  };
+
   const columns = useMemo<ColumnDef<Employee>[]>(
     () => [
       {
@@ -101,24 +122,30 @@ export default function EmployeesPage() {
         header: "Action",
         cell: ({ row }) => (
           <div className="flex">
-            <button
+            <IconButton
               onClick={() => {
                 handleView(row.original._id);
               }}
-              className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
             >
-              <IoEye className="text-sm" />
-              View
-            </button>
-            <button
+              <VisibilityIcon className="text-sm" />
+            </IconButton>
+            <IconButton
+              color="error"
               onClick={() => {
                 handleDelete(row.original._id);
               }}
-              className="flex items-center gap-1 ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
             >
-              <MdDelete className="text-sm" />
-              Delete
-            </button>
+              <DeleteIcon className="text-sm" />
+            </IconButton>
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              variant="text"
+              color="primary"
+              onClick={handleStudyModalOpen}
+            >
+              Add Studies
+            </Button>
           </div>
         ),
       },
@@ -142,13 +169,50 @@ export default function EmployeesPage() {
         <h1 className="text-xl font-bold mb-4">Employees</h1>
 
         {/* 🔍 Search Input */}
-        <input
+        <TextField
           type="text"
+          size="small"
           placeholder="Search..."
           value={globalFilter ?? ""}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="border p-2 rounded mb-4 w-64"
         />
+
+        {addStudies && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 relative
+                         animate-[fadeIn_.25s_ease]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-xl font-bold text-gray-800">Add Studies</h2>
+                <button
+                  onClick={handleStudyModalClose}
+                  className="text-gray-400 cursor-pointer hover:text-red-500 text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Form */}
+              <form className="space-y-2">
+                {/* Buttons */}
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button
+                    variant="outlined"
+                    type="button"
+                    onClick={handleStudyModalClose}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button variant="contained">Save</Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {showModal && selectedEmployee && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -197,7 +261,7 @@ export default function EmployeesPage() {
           <p>Loading...</p>
         ) : (
           <>
-            <table className="min-w-full bg-white shadow rounded">
+            <table className="min-w-full bg-white shadow rounded mt-2">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr className="text-sm" key={headerGroup.id}>

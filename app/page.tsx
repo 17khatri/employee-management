@@ -4,8 +4,11 @@ import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { loginUser } from "./services/auth.service";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "./store/auth.store";
+import { useDispatch } from "react-redux";
+import { setAuth } from "./store/authSlice";
 import { motion } from "framer-motion";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
 import toast from "react-hot-toast";
 
 export default function Home() {
@@ -23,12 +26,19 @@ export default function Home() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
 
-    if (token) {
+    if (token && user) {
+      dispatch(
+        setAuth({
+          token,
+          user: JSON.parse(user),
+        }),
+      );
       router.replace("/dashboard");
     }
   }, []);
@@ -39,8 +49,19 @@ export default function Home() {
 
     try {
       const result = await loginUser(data);
+
+      // Save to localStorage
       localStorage.setItem("token", result.token);
-      setUser(result.user);
+      localStorage.setItem("user", JSON.stringify(result.user));
+
+      // Save to Redux
+      dispatch(
+        setAuth({
+          user: result.user,
+          token: result.token,
+        }),
+      );
+
       toast.success("Login successful!");
       router.replace("/dashboard");
     } catch (error: any) {
@@ -62,8 +83,9 @@ export default function Home() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
-            <label className="block mb-1 font-medium">Email</label>
-            <input
+            <TextField
+              label="Email"
+              variant="outlined"
               {...register("email", {
                 required: "Email is required",
                 pattern: {
@@ -71,7 +93,7 @@ export default function Home() {
                   message: "Invalid email address",
                 },
               })}
-              className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none"
+              className="w-full"
               placeholder="Enter your email"
             />
             {errors.email && (
@@ -82,11 +104,12 @@ export default function Home() {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Password</label>
-            <input
+            <TextField
+              label="Password"
+              variant="outlined"
               {...register("password", { required: "Password is required" })}
               type="password"
-              className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none"
+              className="w-full"
               placeholder="Enter your password"
             />
             {errors.password && (
@@ -98,13 +121,14 @@ export default function Home() {
 
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-          <button
+          <Button
+            variant="contained"
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-white font-semibold bg-indigo-600 hover:bg-indigo-700 transition disabled:opacity-50"
+            className="w-full"
           >
             {loading ? "Logging in..." : "Login"}
-          </button>
+          </Button>
         </form>
       </motion.div>
     </div>

@@ -12,10 +12,7 @@ export async function GET(req) {
   }
   try {
     await connectDB();
-    const user = auth.user;
-    console.log("Authenticated User:", user);
     const userId = auth.user.id;
-    console.log("User ID:", userId);
     const meetings = await Meeting.find({
       $or: [{ createdBy: userId }, { attendees: userId }],
     }).populate("createdBy", "name email");

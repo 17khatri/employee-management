@@ -11,7 +11,7 @@ import {
   getProjects,
 } from "@/app/services/auth.service";
 import toast from "react-hot-toast";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import {
   DndContext,
   closestCenter,
@@ -20,8 +20,18 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { TASK_STATUS_VALUES } from "@/app/constants/task";
-import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
-import { IoEye } from "react-icons/io5";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import FormHelperText from "@mui/material/FormHelperText";
+import IconButton from "@mui/material/IconButton";
 
 interface Task {
   _id: string;
@@ -67,6 +77,7 @@ export default function TasksPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<Task>({
     defaultValues: {
@@ -241,7 +252,6 @@ export default function TasksPage() {
 
     if (!task || task.status === newStatus) return;
 
-    // 🔥 Optimistic UI update
     setTasks((prev) =>
       prev.map((t) => (t._id === taskId ? { ...t, status: newStatus } : t)),
     );
@@ -314,13 +324,14 @@ export default function TasksPage() {
         <div className="p-4">
           <div className="flex items-center p-3 justify-between">
             <h1 className="text-Sxl font-bold">Tasks</h1>
-            <button
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<AddIcon />}
               onClick={handleModalOpen}
-              className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
             >
-              <MdAdd className="text-sm" />
               Add Task
-            </button>
+            </Button>
           </div>
 
           {viewTask && (
@@ -384,137 +395,171 @@ export default function TasksPage() {
                 {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Title
-                    </label>
-                    <input
+                    <TextField
+                      size="small"
                       {...register("title", { required: "Title is required" })}
                       type="text"
                       placeholder="Enter task title"
-                      className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                 focus:ring-indigo-400 outline-none transition"
+                      className="w-full"
+                      helperText={errors.title ? errors.title.message : ""}
+                      error={!!errors.title}
                     />
-                    {errors.title && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.title.message}
-                      </p>
-                    )}
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Descriptions
-                    </label>
-                    <input
+                    <TextField
+                      size="small"
                       {...register("description", {
                         required: "Description is required",
                       })}
                       placeholder="Enter description"
-                      className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                 focus:ring-indigo-400 outline-none transition"
+                      className="w-full"
+                      helperText={
+                        errors.description ? errors.description.message : ""
+                      }
+                      error={!!errors.description}
                     />
-                    {errors.description && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.description.message}
-                      </p>
-                    )}
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Select Project
-                    </label>
-
-                    <select
-                      {...register("projectId._id", {
-                        required: "Project is required",
-                      })}
-                      className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                       focus:ring-indigo-400 outline-none transition"
+                    <FormControl
+                      fullWidth
+                      margin="dense"
+                      error={!!errors.projectId}
                     >
-                      <option value="">Select project</option>
-                      {projects.map((project) => (
-                        <option key={project._id} value={project._id}>
-                          {project.title}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.status && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.status.message}
-                      </p>
-                    )}
+                      <InputLabel size="small" id="project-label">
+                        Project
+                      </InputLabel>
+                      <Controller
+                        name="projectId._id"
+                        control={control}
+                        rules={{ required: "Project is required" }}
+                        render={({ field }) => (
+                          <Select
+                            size="small"
+                            {...field}
+                            labelId="project-label"
+                            label="Project"
+                          >
+                            {projects.map((project) => (
+                              <MenuItem
+                                key={project._id}
+                                value={project._id}
+                                disabled={project._id === "manager"}
+                              >
+                                {project.title}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {errors.projectId && (
+                        <FormHelperText>
+                          {errors.projectId.message}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Select Employee
-                    </label>
-
-                    <select
-                      {...register("assignedTo._id", {
-                        required: "Employee is required",
-                      })}
-                      className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                       focus:ring-indigo-400 outline-none transition"
+                    <FormControl
+                      fullWidth
+                      margin="dense"
+                      error={!!errors.projectId}
                     >
-                      <option value="">Select employee</option>
-                      {employees.map((employee) => (
-                        <option key={employee._id} value={employee._id}>
-                          {employee.userId.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.status && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.status.message}
-                      </p>
-                    )}
+                      <InputLabel size="small" id="employee-label">
+                        Select Employee
+                      </InputLabel>
+                      <Controller
+                        name="assignedTo._id"
+                        control={control}
+                        rules={{ required: "Employee is required" }}
+                        render={({ field }) => (
+                          <Select
+                            size="small"
+                            {...field}
+                            labelId="employee-label"
+                            label="Select Employee"
+                          >
+                            {employees.map((employee) => (
+                              <MenuItem
+                                key={employee._id}
+                                value={employee._id}
+                                disabled={employee._id === "manager"}
+                              >
+                                {employee.userId.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {errors.projectId && (
+                        <FormHelperText>
+                          {errors.projectId.message}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Status
-                    </label>
-                    <select
-                      {...register("status", {
-                        required: "Status is required",
-                      })}
-                      className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                                       focus:ring-indigo-400 outline-none transition"
+                    <FormControl
+                      fullWidth
+                      margin="dense"
+                      error={!!errors.projectId}
                     >
-                      <option value="">Select status</option>
-                      {TASK_STATUS_VALUES.map((status) => (
-                        <option key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.status && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.status.message}
-                      </p>
-                    )}
+                      <InputLabel size="small" id="status-label">
+                        Status
+                      </InputLabel>
+                      <Controller
+                        name="status"
+                        control={control}
+                        rules={{ required: "Status is required" }}
+                        render={({ field }) => (
+                          <Select
+                            size="small"
+                            {...field}
+                            labelId="status-label"
+                            label="Status"
+                          >
+                            {TASK_STATUS_VALUES.map((status) => (
+                              <MenuItem key={status} value={status}>
+                                {status.charAt(0).toUpperCase() +
+                                  status.slice(1)}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {errors.projectId && (
+                        <FormHelperText>
+                          {errors.projectId.message}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
                   </div>
 
                   {/* Buttons */}
                   <div className="flex justify-end gap-3 pt-4">
-                    <button
+                    <Button
                       type="button"
                       onClick={handleModalClose}
                       className="px-5 py-2 rounded-xl border hover:bg-gray-100"
                     >
                       Cancel
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
+                      variant="contained"
                       type="submit"
                       className="px-6 py-2 rounded-xl bg-indigo-600 
                                  text-white font-semibold hover:bg-indigo-700 
                                  shadow-md hover:shadow-lg transition"
                     >
                       {editingTask ? "Update" : "Save"}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -562,28 +607,22 @@ export default function TasksPage() {
                             </div>
 
                             <div className="flex gap-2 mt-3">
-                              <button
+                              <IconButton
+                                color="primary"
                                 onClick={() => handleView(task)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded"
                               >
-                                <IoEye className="text-sm" />
-                                View
-                              </button>
-                              <button
-                                onClick={() => handleEdit(task)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500 text-white rounded"
-                              >
-                                <MdEdit className="text-sm" />
-                                Edit
-                              </button>
+                                <VisibilityIcon className="text-sm" />
+                              </IconButton>
+                              <IconButton onClick={() => handleEdit(task)}>
+                                <EditIcon className="text-sm" />
+                              </IconButton>
 
-                              <button
+                              <IconButton
                                 onClick={() => handleDelete(task._id)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-red-500 text-white rounded"
+                                color="error"
                               >
-                                <MdDelete className="text-sm" />
-                                Delete
-                              </button>
+                                <DeleteIcon className="text-sm" />
+                              </IconButton>
                             </div>
                           </div>
                         </DraggableTask>

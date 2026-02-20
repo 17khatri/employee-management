@@ -1,13 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useAuthStore } from "../store/auth.store";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../store/store";
+import { setAuth } from "../store/authSlice";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowRoles?: string[]; // Optional prop to specify allowed roles
+  allowRoles?: string[];
 }
 
 export default function ProtectedRoute({
@@ -15,24 +16,37 @@ export default function ProtectedRoute({
   allowRoles,
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const isAuthReady = useAuthStore((state) => state.isAuthReady);
+  const dispatch = useDispatch();
+
+  const { user, token } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (!isAuthReady) return; // Wait until auth state is ready
-    const token = localStorage.getItem("token");
+    // Restore auth from localStorage on first load
     if (!token) {
-      router.push("/"); // Redirect to login if no token
-      return;
-    }
-    if (!user || (allowRoles && !allowRoles.includes(user.role))) {
-      router.replace("/unauthorized"); // Redirect to unauthorized page if role is not allowed
-    }
-  }, [router, user, allowRoles]);
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-  if (!isAuthReady) {
-    return null; // Optionally, you can show a loading spinner here
-  }
+      if (storedToken && storedUser) {
+        dispatch(
+          setAuth({
+            token: storedToken,
+            user: JSON.parse(storedUser),
+          }),
+        );
+        return;
+      } else {
+        router.replace("/");
+        return;
+      }
+    }
+
+    // Role check
+    if (allowRoles && user && !allowRoles.includes(user.role)) {
+      router.replace("/unauthorized");
+    }
+  }, [token, user?.name, allowRoles, dispatch, router]);
+
+  if (!token) return null; // optional loader
 
   return <>{children}</>;
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import {
   addUser,
   deleteUser,
@@ -12,7 +12,25 @@ import {
 } from "@/app/services/auth.service";
 import { ROLE_VALUES } from "@/app/constants/roles";
 import toast from "react-hot-toast";
-import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getFilteredRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import FormHelperText from "@mui/material/FormHelperText";
+import IconButton from "@mui/material/IconButton";
 
 interface User {
   _id: string;
@@ -38,6 +56,7 @@ export default function UserPage() {
     handleSubmit,
     reset: resetForm,
     watch,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -54,7 +73,7 @@ export default function UserPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [active, setActive] = useState(false);
+  const [globalFilter, setGlobalFilter] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const selectedRole = watch("role");
   const fetchUsers = async () => {
@@ -134,7 +153,6 @@ export default function UserPage() {
       phone: String(user.employee?.phone || ""),
     });
 
-    setActive(user.isActive);
     setShowModal(true);
   };
 
@@ -167,22 +185,73 @@ export default function UserPage() {
       phone: "",
     });
 
-    setActive(false);
     setShowModal(true);
   };
 
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => [
+      {
+        header: "Name",
+        accessorFn: (row) => row.name,
+      },
+      {
+        header: "Email",
+        accessorFn: (row) => row.email,
+      },
+      {
+        header: "Active",
+        cell: ({ row }) => (row.original.isActive ? "Yes" : "No"),
+      },
+      {
+        header: "Action",
+        cell: ({ row }) => (
+          <div className="flex">
+            <IconButton
+              onClick={() => {
+                handleEdit(row.original);
+              }}
+            >
+              <EditIcon className="text-sm" />
+            </IconButton>
+            <IconButton
+              color="error"
+              onClick={() => {
+                handleDelete(row.original._id);
+              }}
+            >
+              <DeleteIcon className="text-sm" />
+            </IconButton>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data: users,
+    columns,
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
   return (
     <ProtectedRoute allowRoles={["admin"]}>
-      <div className="">
+      <div className="p-4">
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-Sxl font-bold">Users</h1>
-          <button
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
             onClick={handleModalOpen}
             className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
           >
-            <MdAdd className="text-sm" />
             Add User
-          </button>
+          </Button>
         </div>
 
         {showModal && (
@@ -208,28 +277,23 @@ export default function UserPage() {
               {/* Form */}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Name
-                  </label>
-                  <input
+                  <TextField
+                    label="Name"
+                    variant="outlined"
                     {...register("name", { required: "Name is required" })}
                     type="text"
+                    size="small"
                     placeholder="Enter user name"
-                    className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                       focus:ring-indigo-400 outline-none transition"
+                    className="w-full"
+                    error={!!errors.name}
+                    helperText={errors.name ? errors.name.message : ""}
                   />
-                  {errors.name && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.name.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Email
-                  </label>
-                  <input
+                  <TextField
+                    label="Email"
+                    variant="outlined"
                     {...register("email", {
                       required: "Email is required",
                       pattern: {
@@ -238,78 +302,93 @@ export default function UserPage() {
                       },
                     })}
                     type="email"
+                    size="small"
                     placeholder="Enter email"
-                    className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                       focus:ring-indigo-400 outline-none transition"
+                    className="w-full"
+                    error={!!errors.email}
+                    helperText={errors.email ? errors.email.message : ""}
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.email.message}
-                    </p>
-                  )}
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
+                <FormControl fullWidth margin="dense" error={!!errors.role}>
+                  <InputLabel size="small" id="role-label">
                     Role
-                  </label>
-                  <select
-                    {...register("role", {
-                      required: "Role is required",
-                    })}
-                    className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                       focus:ring-indigo-400 outline-none transition"
-                  >
-                    <option value="">Select role</option>
-                    {ROLE_VALUES.map((role) => (
-                      <option
-                        disabled={role === "manager"}
-                        key={role}
-                        value={role}
+                  </InputLabel>
+
+                  <Controller
+                    name="role"
+                    control={control}
+                    rules={{ required: "Role is required" }}
+                    render={({ field }) => (
+                      <Select
+                        size="small"
+                        {...field}
+                        labelId="role-label"
+                        label="Role"
                       >
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                      </option>
-                    ))}
-                  </select>
+                        {ROLE_VALUES.map((role) => (
+                          <MenuItem
+                            key={role}
+                            value={role}
+                            disabled={role === "manager"}
+                          >
+                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
+                  />
+
                   {errors.role && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.role.message}
-                    </p>
+                    <FormHelperText>{errors.role.message}</FormHelperText>
                   )}
-                </div>
+                </FormControl>
 
                 {selectedRole !== "admin" && (
-                  <div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">
+                  <div className="space-y-3">
+                    {/* Department Select */}
+                    <FormControl
+                      fullWidth
+                      margin="dense"
+                      error={!!errors.departmentId}
+                    >
+                      <InputLabel size="small" id="department-label">
                         Department
-                      </label>
-                      <select
-                        {...register("departmentId", {
-                          required: "Department is required",
-                        })}
-                        className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                       focus:ring-indigo-400 outline-none transition"
-                      >
-                        <option value="">Select department</option>
-                        {departments.map((department) => (
-                          <option key={department._id} value={department._id}>
-                            {department.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.departmentId && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.departmentId.message}
-                        </p>
-                      )}
-                    </div>
+                      </InputLabel>
 
+                      <Controller
+                        name="departmentId"
+                        control={control}
+                        rules={{ required: "Department is required" }}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            labelId="department-label"
+                            label="Department"
+                            size="small"
+                          >
+                            {departments.map((department) => (
+                              <MenuItem
+                                key={department._id}
+                                value={department._id}
+                              >
+                                {department.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      <FormHelperText>
+                        {errors.departmentId?.message}
+                      </FormHelperText>
+                    </FormControl>
+
+                    {/* Phone Field */}
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Phone Number
-                      </label>
-                      <input
+                      <TextField
+                        label="Phone"
+                        fullWidth
                         {...register("phone", {
                           required: "Phone number is required",
                           pattern: {
@@ -317,73 +396,60 @@ export default function UserPage() {
                             message: "Invalid phone number",
                           },
                         })}
-                        type="text"
-                        placeholder="Enter phone number"
-                        className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                       focus:ring-indigo-400 outline-none transition"
+                        size="small"
+                        error={!!errors.phone}
+                        helperText={errors.phone?.message}
                       />
-                      {errors.phone && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.phone.message}
-                        </p>
-                      )}
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Salary
-                      </label>
-                      <input
-                        {...register("salary", {
-                          required: "Salary is required",
-                          pattern: {
-                            value: /^\d+$/,
-                            message: "Invalid salary amount",
-                          },
-                        })}
-                        type="text"
-                        placeholder="Enter salary"
-                        className="w-full border p-1 rounded-xl mt-1 focus:ring-2 
-                       focus:ring-indigo-400 outline-none transition"
-                      />
-                      {errors.salary && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.salary.message}
-                        </p>
-                      )}
-                    </div>
+                    {/* Salary Field */}
+                    <TextField
+                      label="Salary"
+                      fullWidth
+                      {...register("salary", {
+                        required: "Salary is required",
+                        pattern: {
+                          value: /^\d+$/,
+                          message: "Invalid salary amount",
+                        },
+                      })}
+                      size="small"
+                      error={!!errors.salary}
+                      helperText={errors.salary?.message}
+                    />
                   </div>
                 )}
 
-                <label className="flex items-center gap-2 text-gray-700">
-                  <input
-                    {...register("isActive")}
-                    type="checkbox"
-                    className="w-4 h-4 accent-indigo-600"
-                    onChange={(e) => setActive(e.target.checked)}
-                    checked={active}
-                  />
-                  Active User
-                </label>
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <label className="flex items-center gap-2 text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                      />
+                      Active User
+                    </label>
+                  )}
+                />
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
-                  <button
+                  <Button
+                    variant="outlined"
                     type="button"
                     onClick={handleModalClose}
-                    className="px-5 py-2 rounded-xl border hover:bg-gray-100"
                   >
                     Cancel
-                  </button>
+                  </Button>
 
-                  <button
-                    type="submit"
-                    className="px-6 py-2 rounded-xl bg-indigo-600 
-                       text-white font-semibold hover:bg-indigo-700 
-                       shadow-md hover:shadow-lg transition"
-                  >
+                  <Button variant="contained" type="submit">
                     {editingUser ? "Update" : "Save"}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -394,16 +460,24 @@ export default function UserPage() {
           <p>Loading users...</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-xl shadow">
+            <TextField
+              size="small"
+              type="text"
+              placeholder="Search..."
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="border p-2 rounded mb-4 w-64"
+            />
+            <table className="min-w-full mt-2 bg-white rounded-xl shadow">
               <thead>
                 <tr className="bg-gray-100 text-left">
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">Active</th>
-                  <th className="p-3">Action</th>
+                  <th className="p-3 text-xs">Name</th>
+                  <th className="p-3 text-xs">Email</th>
+                  <th className="p-3 text-xs">Active</th>
+                  <th className="p-3 text-xs">Action</th>
                 </tr>
               </thead>
-              <tbody>
+              {/* <tbody>
                 {users.map((user) => (
                   <tr key={user._id} className="border-t text-xs">
                     <td className="p-3">{user.name}</td>
@@ -412,25 +486,62 @@ export default function UserPage() {
                       {user.isActive ? "Yes" : "No"}
                     </td>
                     <td className="flex p-3">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
-                      >
-                        <MdEdit className="text-sm" /> Edit
-                      </button>
-                      <button
+                      <IconButton onClick={() => handleEdit(user)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        color="error"
                         onClick={() => {
                           handleDelete(user._id);
                         }}
-                        className="flex ml-2 px-3 py-1 gap-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                        className="flex ml-2 px-3 py-1 gap-1"
                       >
-                        <MdDelete className="text-sm" /> Delete
-                      </button>
+                        <DeleteIcon />
+                      </IconButton>
                     </td>
+                  </tr>
+                ))}
+              </tbody> */}
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} className="border-t">
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="p-3 text-xs">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
+            <div className="flex items-center gap-2 mt-4">
+              <button
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="px-3 text-xs py-1 border rounded"
+              >
+                Previous
+              </button>
+
+              <span className="text-xs">
+                Page
+                <strong>
+                  {table.getState().pagination.pageIndex + 1} of{" "}
+                  {table.getPageCount()}
+                </strong>
+              </span>
+
+              <button
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="px-3 text-xs py-1 border rounded"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

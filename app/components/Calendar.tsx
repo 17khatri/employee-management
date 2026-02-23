@@ -140,13 +140,24 @@ export default function Calendar() {
         selectable={true}
         timeZone="local"
         editable={true}
+        nowIndicator={true}
         events={calendarEvents}
         dateClick={(info) => {
           reset();
           setEditingId(null);
           const clickedDate = new Date(info.date);
+          const endDate = new Date(clickedDate);
+          endDate.setHours(endDate.getHours() + 1);
+          const hours = info.date.getHours().toString().padStart(2, "0");
+          const time = info.date.getMinutes().toString().padStart(2, "0");
+          const endHours = endDate.getHours().toString().padStart(2, "0");
+          const endMinutes = endDate.getMinutes().toString().padStart(2, "0");
+          const formattedStartTime = `${hours}:${time}`;
+          const formattedEndTime = `${endHours}:${endMinutes}`;
           const formattedDate = clickedDate.toISOString().split("T")[0];
           setValue("date", formattedDate);
+          setValue("startTime", formattedStartTime);
+          setValue("endTime", formattedEndTime);
           setIsModalOpen(true);
         }}
         eventClick={(info) => {
@@ -159,6 +170,41 @@ export default function Calendar() {
           setValue("endTime", meeting.endTime);
           setValue("attendees", meeting.attendees);
           setIsModalOpen(true);
+        }}
+        eventDrop={async (info) => {
+          const formatTime = (date: any) => {
+            const hours = date.getHours().toString().padStart(2, "0");
+            const minutes = date.getMinutes().toString().padStart(2, "0");
+            return `${hours}:${minutes}`;
+          };
+          try {
+            const event = info.event;
+            const updatedData = {
+              date: event.start?.toLocaleDateString("en-CA"),
+              startTime: formatTime(event.start),
+              endTime: formatTime(event.end),
+            };
+            await updateMeeting(event.id, updatedData);
+          } catch (error) {
+            console.error(error);
+            info.revert();
+          }
+        }}
+        eventResize={async (info) => {
+          try {
+            const event = info.event;
+            const formatTime = (date: any) => {
+              const hours = date.getHours().toString().padStart(2, "0");
+              const minutes = date.getMinutes().toString().padStart(2, "0");
+              return `${hours}:${minutes}`;
+            };
+            const updatedData = {
+              date: event.start?.toLocaleDateString("en-CA"),
+              startTime: formatTime(event.start),
+              endTime: formatTime(event.end),
+            };
+            await updateMeeting(event.id, updatedData);
+          } catch (error) {}
         }}
       />
       {isModalOpen && (

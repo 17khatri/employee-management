@@ -1,4 +1,4 @@
-import "@/models;";
+import "@/models";
 import Study from "@/models/Studies";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
@@ -26,26 +26,55 @@ export async function POST(req) {
   }
   try {
     await connectDB();
+    const { employeeId, education } = await req.json();
 
-    const { employeeId, grade, percentage, passingYear } = await req.json();
-
-    if (!employeeId || !grade || !passingYear) {
+    if (!employeeId || !education) {
       return NextResponse.json(
         { message: "Employee ID, grade, and passing year are required" },
         { status: 400 },
       );
     }
 
-    const newStudy = new Study({
+    const studyData = education.map((item) => ({
       employeeId,
-      grade,
-      percentage,
-      passingYear,
-    });
+      grade: item.grade,
+      percentage: item.percentage,
+      passingYear: item.passingYear,
+    }));
 
-    await newStudy.save();
+    const newStudy = await Study.insertMany(studyData);
 
     return NextResponse.json(newStudy, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await connectDB();
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          message: "Id is required",
+        },
+        { status: 400 },
+      );
+    }
+
+    const study = await Study.findByIdAndDelete(id);
+    if (!study) {
+      return NextResponse.json({ message: "study not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      {
+        message: "study delted successfully",
+      },
+      { status: 200 },
+    );
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

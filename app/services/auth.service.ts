@@ -1,3 +1,4 @@
+import { StudyFormValues } from "../(protected)/employees/page";
 import axiosInstance from "./axiosInstance";
 
 export const loginUser = async (data: {
@@ -137,13 +138,29 @@ export const addMeeting = async (data: {
     return response.data;
 };
 
-export const updateMeeting = async (id: any, data: {
-    title: string;
-    description: string;
-    date: string;
-    time: string;
-    attendees: string[];
+export const updateMeeting = async (id: string, data: {
+    title?: string;
+    description?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    attendees?: string[];
 }) => {
     const response = await axiosInstance.patch(`/meetings`, { id: id, ...data });
     return response.data;
 };
+
+export const getEmployeesStudies = async (id: any) => {
+    const response = await axiosInstance.get(`/studies/${id}`)
+    return response.data
+}
+
+export const addEmployeeStudies = async (data: StudyFormValues, employeeId: string | undefined) => {
+    const response = await axiosInstance.post("/studies", { ...data, employeeId: employeeId })
+    return response.data;
+}
+
+export const deleteStudies = async (id: any) => {
+    const response = await axiosInstance.delete("/studies", { data: { id } })
+    return response.data
+}

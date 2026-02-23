@@ -6,6 +6,9 @@ import {
   deleteEmployee,
   getEmployees,
   viewEmployee,
+  addEmployeeStudies,
+  getEmployeesStudies,
+  deleteStudies,
 } from "@/app/services/auth.service";
 import {
   ColumnDef,
@@ -18,10 +21,17 @@ import {
 import toast from "react-hot-toast";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
+import RemoveIcon from "@mui/icons-material/Remove";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
+import {
+  SubmitErrorHandler,
+  SubmitHandler,
+  useFieldArray,
+  useForm,
+} from "react-hook-form";
 
 interface Employee {
   _id: string;
@@ -36,10 +46,14 @@ interface Employee {
 }
 
 interface Studies {
-  employeeId: string;
+  _id?: string;
   grade: string;
   percentage: string;
-  passingYear: number;
+  passingYear: string;
+}
+
+export interface StudyFormValues {
+  education: Studies[];
 }
 
 export default function EmployeesPage() {
@@ -52,6 +66,16 @@ export default function EmployeesPage() {
   const [showModal, setShowModal] = useState(false);
   const [addStudies, setAddStudies] = useState<Boolean>(false);
   const [editingStudies, setEditingStudies] = useState<Studies | null>(null);
+  const { control, register, handleSubmit, reset } = useForm<StudyFormValues>({
+    defaultValues: {
+      education: [{ grade: "", percentage: "", passingYear: "" }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "education",
+  });
 
   const fetchEmployees = async () => {
     try {
@@ -92,12 +116,48 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleStudyModalOpen = () => {
-    setAddStudies(true);
+  const handleStudyModalOpen = async (employee: Employee) => {
+    try {
+      setSelectedEmployee(employee);
+      const response = await getEmployeesStudies(employee._id);
+      if (response && response.length > 0) {
+        const formattedData = response.map((item: any) => ({
+          _id: item._id,
+          grade: item.grade || "",
+          percentage: item.percentage || "",
+          passingYear: item.passingYear || "",
+        }));
+        reset({ education: formattedData });
+      } else {
+        reset({
+          education: [{ grade: "", percentage: "", passingYear: "" }],
+        });
+      }
+      setAddStudies(true);
+    } catch (error) {}
+  };
+
+  const handleRemoveStudy = async (index: number) => {
+    const study = fields[index];
+
+    try {
+      // If study exists in DB
+      if (study?._id) {
+        await deleteStudies(study._id);
+        toast.success("Study deleted successfully");
+      }
+
+      // Remove from form (UI)
+      remove(index);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete study");
+    }
   };
 
   const handleStudyModalClose = () => {
     setAddStudies(false);
+    reset();
   };
 
   const columns = useMemo<ColumnDef<Employee>[]>(
@@ -142,7 +202,7 @@ export default function EmployeesPage() {
               startIcon={<AddIcon />}
               variant="text"
               color="primary"
-              onClick={handleStudyModalOpen}
+              onClick={() => handleStudyModalOpen(row.original)}
             >
               Add Studies
             </Button>
@@ -162,6 +222,16 @@ export default function EmployeesPage() {
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  const onSubmit = (data: StudyFormValues) => {
+    addEmployeeStudies(data, selectedEmployee?._id);
+    console.log(
+      "data",
+      data.education,
+      "Seletected Employee",
+      selectedEmployee?._id,
+    );
+  };
 
   return (
     <ProtectedRoute allowRoles={["admin"]}>
@@ -196,7 +266,62 @@ export default function EmployeesPage() {
               </div>
 
               {/* Form */}
-              <form className="space-y-2">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+                {fields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="grid grid-cols-4 gap-3 items-center mb-2"
+                  >
+                    <TextField
+                      label="Grade"
+                      size="small"
+                      {...register(`education.${index}.grade`)}
+                    />
+
+                    <TextField
+                      label="Percentage"
+                      size="small"
+                      {...register(`education.${index}.percentage`)}
+                    />
+
+                    <TextField
+                      label="Year"
+                      size="small"
+                      {...register(`education.${index}.passingYear`)}
+                    />
+
+                    <div className="flex gap-1">
+                      {/* Add Button (only show on last row) */}
+                      {index === fields.length - 1 && (
+                        <IconButton
+                          color="primary"
+                          onClick={() =>
+                            append({
+                              grade: "",
+                              percentage: "",
+                              passingYear: "",
+                            })
+                          }
+                        >
+                          <AddIcon />
+                        </IconButton>
+                      )}
+
+                      {/* Delete Button (show if more than 1 row) */}
+                      {fields.length > 1 && (
+                        <IconButton
+                          color="error"
+                          onClick={() => {
+                            handleRemoveStudy(index);
+                            remove(index);
+                          }}
+                        >
+                          <RemoveIcon />
+                        </IconButton>
+                      )}
+                    </div>
+                  </div>
+                ))}
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
                   <Button
@@ -207,7 +332,9 @@ export default function EmployeesPage() {
                     Cancel
                   </Button>
 
-                  <Button variant="contained">Save</Button>
+                  <Button type="submit" variant="contained">
+                    Save
+                  </Button>
                 </div>
               </form>
             </div>

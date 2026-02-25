@@ -51,10 +51,24 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    const { name, email, isActive, role, phone, departmentId, salary } =
-      await req.json();
+    const {
+      firstName,
+      lastName,
+      email,
+      isActive,
+      role,
+      phone,
+      departmentId,
+      salary,
+    } = await req.json();
 
-    if (!name || !email || isActive === undefined || role === undefined) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      isActive === undefined ||
+      role === undefined
+    ) {
       return NextResponse.json(
         { message: "Name, email, isActive and role are required" },
         { status: 400 },
@@ -74,7 +88,8 @@ export async function POST(req) {
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
     const user = await User.create({
-      name,
+      firstName,
+      lastName,
       email,
       role,
       isActive,
@@ -95,7 +110,8 @@ export async function POST(req) {
         message: "User created successfully",
         user: {
           _id: user._id,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           isActive: user.isActive,
           role: user.role,
@@ -139,11 +155,11 @@ export async function PATCH(req) {
   try {
     await connectDB();
 
-    const { userId, name, email, isActive } = await req.json();
+    const { userId, firstName, lastName, email, isActive } = await req.json();
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { name, email, isActive },
+      { firstName, lastName, email, isActive },
       { new: true },
     );
 

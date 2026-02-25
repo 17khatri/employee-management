@@ -6,6 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import {
   addMeeting,
+  getHolidays,
   getMeetings,
   updateMeeting,
 } from "../services/auth.service";
@@ -20,6 +21,8 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormHelperText from "@mui/material/FormHelperText";
 import Select from "@mui/material/Select";
+import { RootState } from "../store/store";
+import { useSelector } from "react-redux";
 
 export interface CalendarEvent {
   _id: string;
@@ -48,16 +51,19 @@ interface Users {
   role: string;
 }
 
-interface UserOption {
-  value: string;
-  label: string;
+interface Holidays {
+  _id: string;
+  name: string;
+  date: Date;
 }
 
 export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [holidays, setHolidays] = useState<Holidays[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState<Users[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
   const {
     register,
     handleSubmit,
@@ -75,6 +81,7 @@ export default function Calendar() {
       attendees: [],
     },
   });
+
   useEffect(() => {
     const fetchMeetings = async () => {
       const meetings = await getMeetings();
@@ -91,6 +98,19 @@ export default function Calendar() {
     fetchUsers();
   }, []);
 
+  const fetchHolidays = async () => {
+    try {
+      const response = await getHolidays();
+      setHolidays(response);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchHolidays();
+  }, []);
+
   const calendarEvents = events.map((event) => {
     const dateOnly = new Date(event.date).toLocaleDateString("en-CA");
 
@@ -104,6 +124,19 @@ export default function Calendar() {
       end: end,
       date: event.date,
       extendedProps: event,
+    };
+  });
+
+  const holidayEvents = holidays.map((holiday) => {
+    const holidayDate = new Date(holiday.date);
+
+    return {
+      id: holiday._id,
+      title: `🎉 ${holiday.name}`,
+      start: holidayDate,
+      allDay: true,
+      display: "background",
+      color: "#937bff", // optional styling
     };
   });
 
@@ -141,7 +174,13 @@ export default function Calendar() {
         timeZone="local"
         editable={true}
         nowIndicator={true}
-        events={calendarEvents}
+        events={[...calendarEvents, ...holidayEvents]}
+        dayHeaderDidMount={(arg) => {
+          arg.el.style.cursor = "pointer";
+          arg.el.onclick = () => {
+            alert(arg.date);
+          };
+        }}
         dateClick={(info) => {
           reset();
           setEditingId(null);

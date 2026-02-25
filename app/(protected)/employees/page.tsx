@@ -26,12 +26,7 @@ import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
-import {
-  SubmitErrorHandler,
-  SubmitHandler,
-  useFieldArray,
-  useForm,
-} from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 
 interface Employee {
   _id: string;
@@ -65,7 +60,6 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [addStudies, setAddStudies] = useState<Boolean>(false);
-  const [editingStudies, setEditingStudies] = useState<Studies | null>(null);
   const { control, register, handleSubmit, reset } = useForm<StudyFormValues>({
     defaultValues: {
       education: [{ grade: "", percentage: "", passingYear: "" }],
@@ -225,12 +219,6 @@ export default function EmployeesPage() {
 
   const onSubmit = (data: StudyFormValues) => {
     addEmployeeStudies(data, selectedEmployee?._id);
-    console.log(
-      "data",
-      data.education,
-      "Seletected Employee",
-      selectedEmployee?._id,
-    );
   };
 
   return (

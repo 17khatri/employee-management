@@ -14,8 +14,14 @@ export const getUsers = async () => {
     return response.data;
 }
 
+export const getLoggedInUser = async () => {
+    const response = await axiosInstance.get("/profile")
+    return response.data
+}
+
 export const addUser = async (data: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     isActive: boolean;
 }) => {
@@ -29,7 +35,8 @@ export const deleteUser = async (id: any) => {
 };
 
 export const editUser = async (id: any, data: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     isActive: boolean;
 }) => {
@@ -162,5 +169,54 @@ export const addEmployeeStudies = async (data: StudyFormValues, employeeId: stri
 
 export const deleteStudies = async (id: any) => {
     const response = await axiosInstance.delete("/studies", { data: { id } })
+    return response.data
+}
+
+
+export const getAdminLeaves = async () => {
+    const response = await axiosInstance.get("/leaves")
+    return response.data
+}
+
+export const getEmployeeLeaves = async () => {
+    const response = await axiosInstance.get("/leaves/employees")
+    return response.data
+}
+
+export const getTodayLeaveEmployee = async () => {
+    const response = await axiosInstance.get("leaves/today")
+    return response.data
+}
+
+export const updateLeaves = async (id: string, data: {
+    leaveStatus: string
+}) => {
+    const response = await axiosInstance.patch("/leaves", { id: id, ...data })
+    return response.data
+}
+
+export const addLeaves = async (data: {
+    date: Date;
+    leaveType: string
+}) => {
+    const response = await axiosInstance.post("/leaves/employees", data)
+    return response.data
+}
+
+export const getHolidays = async () => {
+    const response = await axiosInstance.get("/holidays")
+    return response.data
+}
+
+export const addHolidays = async (data: {
+    name: string
+    date: Date;
+}) => {
+    const response = await axiosInstance.post("/holidays", data)
+    return response.data
+}
+
+export const deleteHolidays = async (id: any) => {
+    const response = await axiosInstance.delete("/holidays", { data: { id } })
     return response.data
 }

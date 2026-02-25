@@ -6,3 +6,4 @@ import "./Projects";
 import "./Meeting";
 import "./Studies";
 import "./Leave";
+import "./Holiday";

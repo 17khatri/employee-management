@@ -44,7 +44,7 @@ export default function ProtectedRoute({
     if (allowRoles && user && !allowRoles.includes(user.role)) {
       router.replace("/unauthorized");
     }
-  }, [token, user?.name, allowRoles, dispatch, router]);
+  }, [token, user?.firstName, allowRoles, dispatch, router]);
 
   if (!token) return null; // optional loader
 

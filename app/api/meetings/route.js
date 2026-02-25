@@ -30,13 +30,30 @@ export async function POST(req) {
   }
   try {
     await connectDB();
-
     const { title, description, date, startTime, endTime, attendees } =
       await req.json();
 
     if (!title || !date || !startTime || !endTime) {
       return NextResponse.json(
         { message: "Title, date, start time, and end time are required" },
+        { status: 400 },
+      );
+    }
+
+    const existingMeeting = await Meeting.findOne({
+      createdBy: auth.user.id,
+      date: new Date(date),
+      $expr: {
+        $and: [
+          { $lt: ["$startTime", endTime] },
+          { $gt: ["$endTime", startTime] },
+        ],
+      },
+    });
+
+    if (existingMeeting) {
+      return NextResponse.json(
+        { message: "You already have a meeting in this time slot" },
         { status: 400 },
       );
     }

@@ -320,8 +320,11 @@ export default function TasksPage() {
 
   return (
     <ProtectedRoute allowRoles={["admin"]}>
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="p-4">
+      <div className="p-4">
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
           <div className="flex items-center p-3 justify-between">
             <h1 className="text-Sxl font-bold">Tasks</h1>
             <Button
@@ -633,8 +636,8 @@ export default function TasksPage() {
               </div>
             </>
           )}
-        </div>
-      </DndContext>
+        </DndContext>
+      </div>
     </ProtectedRoute>
   );
 }

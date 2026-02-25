@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -34,7 +34,8 @@ import IconButton from "@mui/material/IconButton";
 
 interface User {
   _id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   isActive: boolean;
   role: string;
@@ -60,7 +61,8 @@ export default function UserPage() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       isActive: false,
       role: "",
@@ -108,13 +110,15 @@ export default function UserPage() {
       const payload =
         data.role === "admin"
           ? {
-              name: data.name,
+              firstName: data.firstName,
+              lastName: data.lastName,
               email: data.email,
               isActive: data.isActive,
               role: data.role,
             }
           : {
-              name: data.name,
+              firstName: data.firstName,
+              lastName: data.lastName,
               email: data.email,
               isActive: data.isActive,
               role: data.role,
@@ -144,7 +148,8 @@ export default function UserPage() {
     setEditingUser(user);
 
     resetForm({
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       isActive: user.isActive,
       role: user.role,
@@ -176,7 +181,8 @@ export default function UserPage() {
     setEditingUser(null);
 
     resetForm({
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       isActive: false,
       role: "",
@@ -192,7 +198,7 @@ export default function UserPage() {
     () => [
       {
         header: "Name",
-        accessorFn: (row) => row.name,
+        accessorFn: (row) => row.firstName,
       },
       {
         header: "Email",
@@ -248,7 +254,6 @@ export default function UserPage() {
             size="small"
             startIcon={<AddIcon />}
             onClick={handleModalOpen}
-            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
           >
             Add User
           </Button>
@@ -276,17 +281,36 @@ export default function UserPage() {
 
               {/* Form */}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
-                <div>
+                <div className="grid grid-cols-2 gap-3">
                   <TextField
-                    label="Name"
+                    label="First Name"
                     variant="outlined"
-                    {...register("name", { required: "Name is required" })}
+                    {...register("firstName", {
+                      required: "First Name is required",
+                    })}
                     type="text"
                     size="small"
-                    placeholder="Enter user name"
+                    placeholder="Enter first name"
                     className="w-full"
-                    error={!!errors.name}
-                    helperText={errors.name ? errors.name.message : ""}
+                    error={!!errors.firstName}
+                    helperText={
+                      errors.firstName ? errors.firstName.message : ""
+                    }
+                  />
+                  <TextField
+                    label="Last Name"
+                    variant="outlined"
+                    {...register("lastName", {
+                      required: "Lasr Name is required",
+                    })}
+                    type="text"
+                    size="small"
+                    placeholder="Enter last name"
+                    className="w-full"
+                    error={!!errors.firstName}
+                    helperText={
+                      errors.firstName ? errors.firstName.message : ""
+                    }
                   />
                 </div>
 
@@ -477,31 +501,6 @@ export default function UserPage() {
                   <th className="p-3 text-xs">Action</th>
                 </tr>
               </thead>
-              {/* <tbody>
-                {users.map((user) => (
-                  <tr key={user._id} className="border-t text-xs">
-                    <td className="p-3">{user.name}</td>
-                    <td className="p-3">{user.email}</td>
-                    <td className="p-3 capitalize">
-                      {user.isActive ? "Yes" : "No"}
-                    </td>
-                    <td className="flex p-3">
-                      <IconButton onClick={() => handleEdit(user)}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        color="error"
-                        onClick={() => {
-                          handleDelete(user._id);
-                        }}
-                        className="flex ml-2 px-3 py-1 gap-1"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </td>
-                  </tr>
-                ))}
-              </tbody> */}
               <tbody>
                 {table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="border-t">

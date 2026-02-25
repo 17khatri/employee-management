@@ -1,18 +1,26 @@
 import mongoose from "mongoose";
-import { LEAVE_STATUS_VALUES } from "../app/constants/leave";
+import {
+  LEAVE_STATUS_VALUES,
+  LEAVE_TYPES_VALUES,
+} from "../app/constants/leave";
 
 const LeaveSchema = new mongoose.Schema({
-  emoloyeeId: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Employee",
+    ref: "User",
   },
   date: {
     type: Date,
     required: true,
   },
+  leaveType: {
+    type: String,
+    enum: LEAVE_TYPES_VALUES,
+  },
   leaveStatus: {
     type: String,
     enum: LEAVE_STATUS_VALUES,
+    default: "Pending",
   },
 });
 

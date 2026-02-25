@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import PeopleIcon from "@mui/icons-material/People";
-import BadgeIcon from "@mui/icons-material/Badge";
-import ApartmentIcon from "@mui/icons-material/Apartment";
-import AppsIcon from "@mui/icons-material/Apps";
-import ListIcon from "@mui/icons-material/List";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import SettingsIcon from "@mui/icons-material/Settings";
-
+import {
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  Badge as BadgeIcon,
+  Apartment as ApartmentIcon,
+  Apps as AppsIcon,
+  List as ListIcon,
+  CalendarMonth as CalendarMonthIcon,
+  Settings as SettingsIcon,
+  AccessAlarm as AccessAlarmIcon,
+} from "@mui/icons-material";
+import CastleIcon from "@mui/icons-material/Castle";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 export default function Sidebar() {
   const pathname = usePathname();
 
@@ -69,6 +74,22 @@ export default function Sidebar() {
         >
           <CalendarMonthIcon className="inline mr-3" />
           Calendar
+        </Link>
+
+        <Link
+          href="/leaves"
+          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/leaves" ? "bg-gray-700" : ""}`}
+        >
+          <AccessAlarmIcon className="inline mr-3" />
+          Leaves
+        </Link>
+
+        <Link
+          href="/holidays"
+          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/holidays" ? "bg-gray-700" : ""}`}
+        >
+          <CastleIcon className="inline mr-3" />
+          Holidays
         </Link>
 
         <Link

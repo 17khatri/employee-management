@@ -1,7 +1,10 @@
 "use client";
 
 import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { getTodayLeaveEmployee } from "@/app/services/auth.service";
+import {
+  getTodayLeaveEmployee,
+  bdayEmployee,
+} from "@/app/services/auth.service";
 import { RootState } from "@/app/store/store";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -20,6 +23,7 @@ interface TodayLeave {
 
 export default function DashboardPage() {
   const [employees, setEmployees] = useState<TodayLeave[]>([]);
+  const [birthdays, setBirthdays] = useState<any>([]);
   const user = useSelector((state: RootState) => state.auth.user);
 
   const getEmployees = async () => {
@@ -35,8 +39,21 @@ export default function DashboardPage() {
     getEmployees();
   }, []);
 
+  const getBirthdayEmployees = async () => {
+    try {
+      const response = await bdayEmployee();
+      setBirthdays(response);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    getBirthdayEmployees();
+  }, []);
+
   return (
-    <ProtectedRoute allowRoles={["admin"]}>
+    <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="min-h-screen w-full bg-gradient-to-br from-indigo-100 via-white to-blue-100 p-8">
         {/* Header */}
         <div className="max-w-6xl mx-auto">
@@ -56,17 +73,11 @@ export default function DashboardPage() {
                 {employees.length}
               </h2>
             </div>
-
             <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition">
-              <p className="text-gray-500 text-sm">Today</p>
-              <h2 className="text-3xl font-bold text-blue-600 mt-2">
-                {new Date().toLocaleDateString()}
+              <p className="text-gray-500 text-sm">Birthdays This Month</p>
+              <h2 className="text-3xl font-bold text-pink-600 mt-2">
+                {birthdays.length}
               </h2>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition">
-              <p className="text-gray-500 text-sm">Status</p>
-              <h2 className="text-3xl font-bold text-green-600 mt-2">Active</h2>
             </div>
           </div>
 
@@ -115,6 +126,49 @@ export default function DashboardPage() {
                     }`}
                     >
                       {leave.leaveType}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Birthday Section */}
+          <div className="mt-12">
+            <h2 className="text-2xl font-semibold mb-6">
+              🎂 Upcoming Birthdays
+            </h2>
+
+            {birthdays.length === 0 ? (
+              <div className="bg-white/70 backdrop-blur-lg border border-gray-200 rounded-2xl p-8 text-center shadow">
+                <p className="text-lg text-gray-600">
+                  No birthdays this month 🎈
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {birthdays.map((emp: any) => (
+                  <div
+                    key={emp._id}
+                    className="bg-white rounded-2xl shadow-md p-6 flex justify-between items-center hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-center text-xl font-bold shadow-md">
+                        {emp.user.firstName?.charAt(0)}
+                      </div>
+
+                      <div>
+                        <p className="text-lg font-semibold">
+                          {emp.user?.firstName} {emp.user?.lastName}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(emp.birthDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="px-4 py-2 rounded-full text-sm font-semibold bg-pink-100 text-pink-600">
+                      🎉 Birthday
                     </div>
                   </div>
                 ))}

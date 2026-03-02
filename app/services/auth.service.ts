@@ -34,15 +34,30 @@ export const deleteUser = async (id: any) => {
     return response.data;
 };
 
-export const editUser = async (id: any, data: {
+export const editAdminUser = async (data: {
     firstName: string;
     lastName: string;
     email: string;
-    isActive: boolean;
 }) => {
-    const response = await axiosInstance.patch(`/users`, { userId: id, ...data });
+    const response = await axiosInstance.patch(`/users`, data);
     return response.data;
 };
+
+export const changePassword = async (data: {
+    currentPassword: string;
+    newPassword: string;
+}) => {
+    const response = await axiosInstance.patch("/change-password", data);
+    return response.data;
+};
+
+export const updatePassword = async (data: {
+    token: any
+    password: any
+}) => {
+    const response = await axiosInstance.post("/reset-password", data)
+    return response.data
+}
 
 export const getEmployees = async () => {
     const response = await axiosInstance.get("/employees");
@@ -218,5 +233,10 @@ export const addHolidays = async (data: {
 
 export const deleteHolidays = async (id: any) => {
     const response = await axiosInstance.delete("/holidays", { data: { id } })
+    return response.data
+}
+
+export const bdayEmployee = async () => {
+    const response = await axiosInstance.get("/upcoming-bday")
     return response.data
 }

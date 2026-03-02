@@ -46,6 +46,8 @@ interface MeetingFormData {
 
 interface Users {
   _id: string;
+  firstName: string;
+  lastName: string;
   name: string;
   email: string;
   role: string;
@@ -64,6 +66,7 @@ export default function Calendar() {
   const [users, setUsers] = useState<Users[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const user = useSelector((state: RootState) => state.auth.user);
+  console.log(user);
   const {
     register,
     handleSubmit,
@@ -308,11 +311,13 @@ export default function Calendar() {
                         {...field}
                         size="small"
                       >
-                        {users.map((user) => (
-                          <MenuItem key={user._id} value={user._id}>
-                            {user.name}
-                          </MenuItem>
-                        ))}
+                        {users
+                          .filter((u) => u._id !== user?.id)
+                          .map((u) => (
+                            <MenuItem key={u._id} value={u._id}>
+                              {u.firstName} {u.lastName}
+                            </MenuItem>
+                          ))}
                       </Select>
                     )}
                   />

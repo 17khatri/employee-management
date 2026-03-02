@@ -6,7 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import {
   addUser,
   deleteUser,
-  editUser,
+  editAdminUser,
   getUsers,
   getDepartments,
 } from "@/app/services/auth.service";
@@ -31,6 +31,14 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
 import IconButton from "@mui/material/IconButton";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormLabel from "@mui/material/FormLabel";
+import dayjs, { Dayjs } from "dayjs";
 
 interface User {
   _id: string;
@@ -43,7 +51,22 @@ interface User {
     phone?: string;
     salary?: number;
     departmentId?: { _id: string; name: string };
+    birthDate: Date | null;
+    gender: string;
   };
+}
+
+interface FormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  isActive: boolean;
+  role: string;
+  departmentId: string;
+  salary: string;
+  phone: string;
+  birthDate: Dayjs | null;
+  gender: string;
 }
 
 interface Department {
@@ -59,7 +82,7 @@ export default function UserPage() {
     watch,
     control,
     formState: { errors },
-  } = useForm({
+  } = useForm<FormValues>({
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -69,6 +92,8 @@ export default function UserPage() {
       departmentId: "",
       salary: "",
       phone: "",
+      birthDate: null,
+      gender: "",
     },
   });
   const [users, setUsers] = useState<User[]>([]);
@@ -125,12 +150,14 @@ export default function UserPage() {
               departmentId: data.departmentId,
               salary: Number(data.salary),
               phone: data.phone,
+              birthDate: data.birthDate,
+              gender: data.gender,
             };
       if (editingUser) {
-        await editUser(editingUser._id, payload);
+        await editAdminUser(payload);
         toast.success("User updated successfully!");
       } else {
-        await addUser(payload); // 🔥 Correct
+        await addUser(payload);
         toast.success("User added successfully!");
       }
 
@@ -156,6 +183,10 @@ export default function UserPage() {
       departmentId: user.employee?.departmentId?._id || "",
       salary: String(user.employee?.salary || ""),
       phone: String(user.employee?.phone || ""),
+      birthDate: user.employee?.birthDate
+        ? dayjs(user.employee.birthDate) // ✅ convert here
+        : null,
+      gender: user.employee?.gender || "",
     });
 
     setShowModal(true);
@@ -189,6 +220,8 @@ export default function UserPage() {
       departmentId: "",
       salary: "",
       phone: "",
+      birthDate: null,
+      gender: "",
     });
 
     setShowModal(true);
@@ -334,79 +367,141 @@ export default function UserPage() {
                   />
                 </div>
 
-                <FormControl fullWidth margin="dense" error={!!errors.role}>
-                  <InputLabel size="small" id="role-label">
-                    Role
-                  </InputLabel>
+                <div className="flex gap-2">
+                  <FormControl
+                    className="w-full"
+                    margin="dense"
+                    error={!!errors.role}
+                  >
+                    <InputLabel size="small" id="role-label">
+                      Role
+                    </InputLabel>
 
-                  <Controller
-                    name="role"
-                    control={control}
-                    rules={{ required: "Role is required" }}
-                    render={({ field }) => (
-                      <Select
-                        size="small"
-                        {...field}
-                        labelId="role-label"
-                        label="Role"
-                      >
-                        {ROLE_VALUES.map((role) => (
-                          <MenuItem
-                            key={role}
-                            value={role}
-                            disabled={role === "manager"}
-                          >
-                            {role.charAt(0).toUpperCase() + role.slice(1)}
-                          </MenuItem>
-                        ))}
-                      </Select>
+                    <Controller
+                      name="role"
+                      control={control}
+                      rules={{ required: "Role is required" }}
+                      render={({ field }) => (
+                        <Select
+                          size="small"
+                          {...field}
+                          labelId="role-label"
+                          label="Role"
+                        >
+                          {ROLE_VALUES.map((role) => (
+                            <MenuItem
+                              key={role}
+                              value={role}
+                              disabled={role === "manager"}
+                            >
+                              {role.charAt(0).toUpperCase() + role.slice(1)}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      )}
+                    />
+
+                    {errors.role && (
+                      <FormHelperText>{errors.role.message}</FormHelperText>
                     )}
-                  />
+                  </FormControl>
+                  {selectedRole !== "admin" && (
+                    <div className="space-y-3 w-full">
+                      {/* Department Select */}
+                      <FormControl
+                        className="w-full"
+                        margin="dense"
+                        error={!!errors.departmentId}
+                      >
+                        <InputLabel size="small" id="department-label">
+                          Department
+                        </InputLabel>
 
-                  {errors.role && (
-                    <FormHelperText>{errors.role.message}</FormHelperText>
+                        <Controller
+                          name="departmentId"
+                          control={control}
+                          rules={{ required: "Department is required" }}
+                          render={({ field }) => (
+                            <Select
+                              {...field}
+                              labelId="department-label"
+                              label="Department"
+                              size="small"
+                            >
+                              {departments.map((department) => (
+                                <MenuItem
+                                  key={department._id}
+                                  value={department._id}
+                                >
+                                  {department.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          )}
+                        />
+
+                        <FormHelperText>
+                          {errors.departmentId?.message}
+                        </FormHelperText>
+                      </FormControl>
+                    </div>
                   )}
-                </FormControl>
-
+                </div>
                 {selectedRole !== "admin" && (
                   <div className="space-y-3">
-                    {/* Department Select */}
-                    <FormControl
-                      fullWidth
-                      margin="dense"
-                      error={!!errors.departmentId}
-                    >
-                      <InputLabel size="small" id="department-label">
-                        Department
-                      </InputLabel>
-
-                      <Controller
-                        name="departmentId"
-                        control={control}
-                        rules={{ required: "Department is required" }}
-                        render={({ field }) => (
-                          <Select
-                            {...field}
-                            labelId="department-label"
-                            label="Department"
-                            size="small"
-                          >
-                            {departments.map((department) => (
-                              <MenuItem
-                                key={department._id}
-                                value={department._id}
-                              >
-                                {department.name}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        )}
-                      />
-
-                      <FormHelperText>
-                        {errors.departmentId?.message}
-                      </FormHelperText>
-                    </FormControl>
+                    <Controller
+                      name="birthDate"
+                      control={control}
+                      rules={{ required: "Birth Date is required" }}
+                      render={({ field }) => (
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            label="Select Birth date"
+                            disableFuture
+                            value={field.value ?? null}
+                            onChange={(newValue) => field.onChange(newValue)}
+                            slotProps={{
+                              textField: {
+                                size: "small",
+                                fullWidth: true,
+                                error: !!errors.birthDate,
+                                helperText: errors.birthDate?.message,
+                              },
+                            }}
+                          />
+                        </LocalizationProvider>
+                      )}
+                    />
+                    <Controller
+                      name="gender"
+                      control={control}
+                      rules={{ required: "Gender is required" }}
+                      render={({ field }) => (
+                        <FormControl error={!!errors.gender} margin="normal">
+                          <FormLabel>Gender</FormLabel>
+                          <RadioGroup row {...field} value={field.value || ""}>
+                            <FormControlLabel
+                              value="male"
+                              control={<Radio size="small" />}
+                              label="Male"
+                            />
+                            <FormControlLabel
+                              value="female"
+                              control={<Radio size="small" />}
+                              label="Female"
+                            />
+                            <FormControlLabel
+                              value="other"
+                              control={<Radio size="small" />}
+                              label="Other"
+                            />
+                          </RadioGroup>
+                          <FormHelperText>
+                            {errors.gender?.message}
+                          </FormHelperText>
+                        </FormControl>
+                      )}
+                    />
 
                     {/* Phone Field */}
                     <div>

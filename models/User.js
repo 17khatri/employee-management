@@ -27,6 +27,12 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  resetToken: {
+    type: String,
+  },
+  resetTokenExpiry: {
+    type: Date,
+  },
 });
 
 UserSchema.virtual("employee", {

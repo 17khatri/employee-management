@@ -9,9 +9,8 @@ export async function POST(req) {
     await connectDB();
 
     const { email, password } = await req.json();
-    const users = await User.find();
     // 1. Check user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate("employee");
     if (!user) {
       return NextResponse.json(
         { message: "Invalid email or password" },
@@ -45,6 +44,7 @@ export async function POST(req) {
           role: user.role,
           firstName: user.firstName,
           lastName: user.lastName,
+          profilePhoto: user.employee?.profilePhoto || null,
         },
         token,
       },

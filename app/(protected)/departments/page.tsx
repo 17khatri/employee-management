@@ -30,7 +30,7 @@ export default function DepartmentPage() {
   }, []);
 
   return (
-    <ProtectedRoute allowRoles={["admin"]}>
+    <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="">
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-xl font-bold">Departments</h1>

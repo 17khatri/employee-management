@@ -32,6 +32,8 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormHelperText from "@mui/material/FormHelperText";
 import IconButton from "@mui/material/IconButton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
 
 interface Task {
   _id: string;
@@ -96,6 +98,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [viewTask, setViewTask] = useState<Task | null>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const fetchTasks = async () => {
     try {
@@ -125,8 +128,10 @@ export default function TasksPage() {
   };
 
   useEffect(() => {
-    fetchEmployees();
-  }, []);
+    if (user?.role === "admin") {
+      fetchEmployees();
+    }
+  }, [user]);
 
   const fetchProjects = async () => {
     try {
@@ -319,7 +324,7 @@ export default function TasksPage() {
   }
 
   return (
-    <ProtectedRoute allowRoles={["admin"]}>
+    <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="p-4">
         <DndContext
           collisionDetection={closestCenter}
@@ -327,14 +332,16 @@ export default function TasksPage() {
         >
           <div className="flex items-center p-3 justify-between">
             <h1 className="text-Sxl font-bold">Tasks</h1>
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleModalOpen}
-            >
-              Add Task
-            </Button>
+            {user?.role === "admin" && (
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleModalOpen}
+              >
+                Add Task
+              </Button>
+            )}
           </div>
 
           {viewTask && (

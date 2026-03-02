@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 export default function Sidebar() {
   const pathname = usePathname();
+  const user = useSelector((state: RootState) => state.auth.user);
 
   return (
     <aside className="w-58 flex flex-col bg-gray-800 text-white p-4">
@@ -27,22 +28,25 @@ export default function Sidebar() {
           <DashboardIcon className="inline mr-3" />
           Dashboard
         </Link>
+        {user?.role === "admin" && (
+          <Link
+            href="/users"
+            className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/users" ? "bg-gray-700" : ""}`}
+          >
+            <PeopleIcon className="inline mr-3" />
+            Users
+          </Link>
+        )}
 
-        <Link
-          href="/users"
-          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/users" ? "bg-gray-700" : ""}`}
-        >
-          <PeopleIcon className="inline mr-3" />
-          Users
-        </Link>
-
-        <Link
-          href="/employees"
-          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/employees" ? "bg-gray-700" : ""}`}
-        >
-          <BadgeIcon className="inline mr-3" />
-          Employees
-        </Link>
+        {user?.role === "admin" && (
+          <Link
+            href="/employees"
+            className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/employees" ? "bg-gray-700" : ""}`}
+          >
+            <BadgeIcon className="inline mr-3" />
+            Employees
+          </Link>
+        )}
 
         <Link
           href="/departments"
@@ -84,13 +88,15 @@ export default function Sidebar() {
           Leaves
         </Link>
 
-        <Link
-          href="/holidays"
-          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/holidays" ? "bg-gray-700" : ""}`}
-        >
-          <CastleIcon className="inline mr-3" />
-          Holidays
-        </Link>
+        {user?.role === "admin" && (
+          <Link
+            href="/holidays"
+            className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/holidays" ? "bg-gray-700" : ""}`}
+          >
+            <CastleIcon className="inline mr-3" />
+            Holidays
+          </Link>
+        )}
 
         <Link
           href="/settings"

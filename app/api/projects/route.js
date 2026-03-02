@@ -2,11 +2,11 @@ import "@/models";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Project from "@/models/Projects";
-import { verifyAdmin } from "@/lib/authMiddleware";
+import { verifyAdmin, verifyUser } from "@/lib/authMiddleware";
 
 // GET all projects
 export async function GET(req) {
-  const auth = verifyAdmin(req);
+  const auth = verifyUser(req);
   if (auth.error) {
     return auth.error;
   }

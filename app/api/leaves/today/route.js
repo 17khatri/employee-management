@@ -2,10 +2,10 @@ import "@/models";
 import Leave from "@/models/Leave";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/authMiddleware";
+import { verifyUser } from "@/lib/authMiddleware";
 
 export async function GET(req) {
-  const auth = verifyAdmin(req);
+  const auth = verifyUser(req);
   if (auth.error) {
     return auth.error;
   }

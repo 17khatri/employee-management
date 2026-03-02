@@ -24,6 +24,17 @@ const EmployeeSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  profilePhoto: {
+    type: String,
+  },
+  birthDate: {
+    type: Date,
+    required: true,
+  },
+  gender: {
+    type: String,
+    required: true,
+  },
 });
 
 const Employee =

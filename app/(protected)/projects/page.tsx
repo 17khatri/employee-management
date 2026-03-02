@@ -25,6 +25,8 @@ import AddIcon from "@mui/icons-material/Add";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
 
 interface Task {
   _id: string;
@@ -63,6 +65,7 @@ export default function ProjectsPage() {
   const [viewProject, setViewProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const fetchProjects = async () => {
     try {
@@ -127,21 +130,25 @@ export default function ProjectsPage() {
             >
               <VisibilityIcon className="text-sm" />
             </IconButton>
-            <IconButton
-              onClick={() => {
-                handleEdit(row.original);
-              }}
-            >
-              <EditIcon className="text-sm" />
-            </IconButton>
-            <IconButton
-              color="error"
-              onClick={() => {
-                handleDelete(row.original._id);
-              }}
-            >
-              <DeleteIcon className="text-sm" />
-            </IconButton>
+            {user?.role === "admin" && (
+              <div>
+                <IconButton
+                  onClick={() => {
+                    handleEdit(row.original);
+                  }}
+                >
+                  <EditIcon className="text-sm" />
+                </IconButton>
+                <IconButton
+                  color="error"
+                  onClick={() => {
+                    handleDelete(row.original._id);
+                  }}
+                >
+                  <DeleteIcon className="text-sm" />
+                </IconButton>
+              </div>
+            )}
           </div>
         ),
       },
@@ -227,18 +234,20 @@ export default function ProjectsPage() {
   };
 
   return (
-    <ProtectedRoute allowRoles={["admin"]}>
+    <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="p-4">
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-Sxl font-bold">Projects</h1>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={handleModalOpen}
-          >
-            Add Project
-          </Button>
+          {user?.role === "admin" && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={handleModalOpen}
+            >
+              Add Project
+            </Button>
+          )}
         </div>
 
         {/* 🔍 Search Input */}

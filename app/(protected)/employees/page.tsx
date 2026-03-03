@@ -31,7 +31,8 @@ import { useFieldArray, useForm } from "react-hook-form";
 interface Employee {
   _id: string;
   userId: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
   };
   isActive: boolean;
@@ -150,15 +151,18 @@ export default function EmployeesPage() {
   };
 
   const handleStudyModalClose = () => {
+    setSelectedEmployee(null);
     setAddStudies(false);
-    reset();
+    reset({
+      education: [{ grade: "", percentage: "", passingYear: "" }],
+    });
   };
 
   const columns = useMemo<ColumnDef<Employee>[]>(
     () => [
       {
         header: "Name",
-        accessorFn: (row) => row.userId.name,
+        accessorFn: (row) => `${row.userId.firstName} ${row.userId.lastName} `,
       },
       {
         header: "Email",
@@ -217,8 +221,14 @@ export default function EmployeesPage() {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  const onSubmit = (data: StudyFormValues) => {
-    addEmployeeStudies(data, selectedEmployee?._id);
+  const onSubmit = async (data: StudyFormValues) => {
+    try {
+      await addEmployeeStudies(data, selectedEmployee?._id);
+      toast.success("Studies saved successfully");
+      handleStudyModalClose();
+    } catch (error) {
+      toast.error("Failed to save studies");
+    }
   };
 
   return (
@@ -235,8 +245,11 @@ export default function EmployeesPage() {
           onChange={(e) => setGlobalFilter(e.target.value)}
         />
 
-        {addStudies && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        {addStudies && selectedEmployee && (
+          <div
+            key={selectedEmployee._id}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          >
             <div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 relative
                          animate-[fadeIn_.25s_ease]"
@@ -301,7 +314,6 @@ export default function EmployeesPage() {
                           color="error"
                           onClick={() => {
                             handleRemoveStudy(index);
-                            remove(index);
                           }}
                         >
                           <RemoveIcon />
@@ -349,7 +361,8 @@ export default function EmployeesPage() {
                 </button>
               </div>
               <p>
-                <strong>Name:</strong> {selectedEmployee.userId.name}
+                <strong>Name:</strong> {selectedEmployee.userId.firstName}{" "}
+                {selectedEmployee.userId.lastName}
               </p>
               <p>
                 <strong>Email:</strong> {selectedEmployee.userId.email}

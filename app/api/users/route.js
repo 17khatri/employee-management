@@ -8,6 +8,7 @@ import { ROLES } from "@/app/constants/roles";
 import Employee from "@/models/Employee";
 import crypto from "crypto";
 import { sendEmail } from "@/lib/sendEmail";
+import path from "path";
 
 function generatePassword(length = 8) {
   const chars =
@@ -159,104 +160,36 @@ export async function POST(req) {
   }
 }
 
-export async function DELETE(req) {
-  try {
-    await connectDB();
-
-    const { userId } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json(
-        { message: "User ID is required" },
-        { status: 400 },
-      );
-    }
-
-    const user = await User.findByIdAndDelete(userId);
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(
-      { message: "User deleted successfully" },
-      { status: 200 },
-    );
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-// export async function PATCH(req) {
-//   try {
-//     const auth = verifyAdmin(req);
-//     if (auth.error) {
-//       return auth.error;
-//     }
-//     await connectDB();
-//     const userId = auth.user.id;
-//     const {
-//       firstName,
-//       lastName,
-//       email,
-//       isActive,
-//       role,
-//       phone,
-//       departmentId,
-//       salary,
-//       birthDate,
-//       gender,
-//     } = await req.json();
-
-//     const user = await User.findByIdAndUpdate(
-//       userId,
-//       { firstName, lastName, email, isActive },
-//       { new: true },
-//     );
-
-//     if (!user) {
-//       return NextResponse.json({ message: "User not found" }, { status: 404 });
-//     }
-
-//     return NextResponse.json(
-//       { message: "User updated successfully", user },
-//       { status: 200 },
-//     );
-//   } catch (error) {
-//     return NextResponse.json({ error: error.message }, { status: 500 });
-//   }
-// }
-
 export async function PATCH(req) {
   try {
     const auth = verifyAdmin(req);
-
     if (!auth) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
 
-    const userId = auth.user.id;
+    const body = await req.json();
+    const {
+      id,
+      firstName,
+      lastName,
+      email,
+      isActive,
+      role,
+      phone,
+      salary,
+      birthDate,
+      gender,
+    } = body;
 
     /* =====================================================
        🔹 ADMIN UPDATE (JSON)
     ====================================================== */
 
-    const body = await req.json();
-    const { firstName, lastName, email, isActive, role } = body;
     if (role === "admin") {
-      console.log(role, "role");
-      // Email uniqueness check
-      const existingUser = await User.findOne({ email });
-      if (existingUser && existingUser._id.toString() !== userId) {
-        return NextResponse.json(
-          { message: "Email already in use" },
-          { status: 400 },
-        );
-      }
-
       const updatedUser = await User.findByIdAndUpdate(
-        userId,
+        id,
         {
           firstName,
           lastName,
@@ -286,64 +219,12 @@ export async function PATCH(req) {
         },
       });
     }
-
     /* =====================================================
        🔹 EMPLOYEE UPDATE (FormData + Image)
     ====================================================== */
     if (role === "employee") {
-      const formData = await req.formData();
-
-      const firstName = formData.get("firstName");
-      const lastName = formData.get("lastName");
-      const email = formData.get("email");
-      const phone = formData.get("phone");
-      const salary = formData.get("salary");
-      const birthDate = formData.get("birthDate");
-      const gender = formData.get("gender");
-      const file = formData.get("profilePhoto");
-
-      let imageUrl;
-
-      // If new profile photo uploaded
-      if (file && typeof file !== "string" && file.size > 0) {
-        const existingEmployee = await Employee.findOne({ userId });
-
-        // Delete old photo
-        if (existingEmployee && existingEmployee.profilePhoto) {
-          const oldImagePath = path.join(
-            process.cwd(),
-            "public",
-            existingEmployee.profilePhoto,
-          );
-
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-        }
-
-        // Save new file
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const fileName = Date.now() + "-" + file.name;
-        const filePath = path.join(process.cwd(), "public/uploads", fileName);
-
-        await writeFile(filePath, buffer);
-
-        imageUrl = "/uploads/" + fileName;
-      }
-
-      // Email uniqueness check
-      const existingUser = await User.findOne({ email });
-      if (existingUser && existingUser._id.toString() !== userId) {
-        return NextResponse.json(
-          { message: "Email already in use" },
-          { status: 400 },
-        );
-      }
-
       const updatedUser = await User.findByIdAndUpdate(
-        userId,
+        id,
         {
           firstName,
           lastName,
@@ -359,12 +240,8 @@ export async function PATCH(req) {
         gender,
       };
 
-      if (imageUrl) {
-        updateEmployeeData.profilePhoto = imageUrl;
-      }
-
       const updatedEmployee = await Employee.findOneAndUpdate(
-        { userId: userId },
+        { userId: id },
         updateEmployeeData,
         { new: true },
       );
@@ -378,14 +255,8 @@ export async function PATCH(req) {
 
       return NextResponse.json({
         message: "Employee profile updated successfully",
-        id: updatedUser._id.toString(),
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        phone: updatedEmployee.phone,
-        salary: updatedEmployee.salary,
-        profilePhoto: updatedEmployee.profilePhoto,
+        userDetails: updatedUser,
+        employeeDetails: updatedEmployee,
       });
     }
 

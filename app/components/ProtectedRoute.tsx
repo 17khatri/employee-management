@@ -41,12 +41,12 @@ export default function ProtectedRoute({
     }
 
     // Role check
-    if (allowRoles && user && !allowRoles.includes(user.role)) {
+    if (allowRoles && user?.role && !allowRoles.includes(user.role)) {
       router.replace("/unauthorized");
     }
-  }, [token, user?.firstName, allowRoles, dispatch, router]);
+  }, [token, user?.role, user?.firstName, allowRoles, dispatch, router]);
 
-  if (!token) return null; // optional loader
+  if (!token || !user) return null; // optional loader
 
   return <>{children}</>;
 }

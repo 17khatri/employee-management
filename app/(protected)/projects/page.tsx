@@ -389,6 +389,7 @@ export default function ProjectsPage() {
                     size="small"
                     {...register("title", { required: "Title is required" })}
                     type="text"
+                    label="Enter task title"
                     placeholder="Enter task title"
                     className="w-full"
                     error={!!errors.title}
@@ -402,6 +403,7 @@ export default function ProjectsPage() {
                     {...register("description", {
                       required: "Description is required",
                     })}
+                    label="Enter description"
                     placeholder="Enter description"
                     className="w-full"
                     helperText={

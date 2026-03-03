@@ -19,6 +19,23 @@ export const getLoggedInUser = async () => {
     return response.data
 }
 
+export const updateLoggedInUser = async (data: {
+    firstName: string;
+    lastName: string;
+    email: string
+}) => {
+    const response = await axiosInstance.patch("/profile/admin", data)
+    return response.data
+}
+
+export const updateEmployeeProfile = async (formData: FormData) => {
+    const response = await axiosInstance.patch(
+        "/profile/employee",
+        formData
+    );
+    return response.data;
+};
+
 export const addUser = async (data: {
     firstName: string;
     lastName: string;
@@ -29,17 +46,12 @@ export const addUser = async (data: {
     return response.data;
 };
 
-export const deleteUser = async (id: any) => {
-    const response = await axiosInstance.delete(`/users`, { data: { userId: id } });
-    return response.data;
-};
-
-export const editAdminUser = async (data: {
+export const editUser = async (id: any, data: {
     firstName: string;
     lastName: string;
     email: string;
 }) => {
-    const response = await axiosInstance.patch(`/users`, data);
+    const response = await axiosInstance.patch(`/users`, { id: id, ...data });
     return response.data;
 };
 

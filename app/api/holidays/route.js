@@ -24,6 +24,15 @@ export async function POST(req) {
   try {
     await connectDB();
     const { name, date } = await req.json();
+    const exists = await Holiday.findOne({ date });
+
+    if (exists) {
+      return NextResponse.json(
+        { message: "Holiday already exists for this date" },
+        { status: 400 },
+      );
+    }
+
     if (!name || !date) {
       return NextResponse.json(
         { message: "name and date is required" },

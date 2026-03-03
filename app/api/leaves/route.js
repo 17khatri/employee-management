@@ -11,11 +11,13 @@ export async function GET(req) {
   }
   try {
     await connectDB();
-
+    const leavess = await Leave.find();
+    console.log(leavess, "leavesss");
     const leaves = await Leave.find().populate({
       path: "userId",
-      select: "name email",
+      select: "firstName lastName email",
     });
+    console.log(leaves);
     return NextResponse.json(leaves, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

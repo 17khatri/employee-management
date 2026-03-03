@@ -17,7 +17,6 @@ export async function POST(req) {
         { status: 401 },
       );
     }
-
     // 2. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -26,7 +25,6 @@ export async function POST(req) {
         { status: 401 },
       );
     }
-
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },

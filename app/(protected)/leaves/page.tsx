@@ -35,7 +35,8 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 interface Leaves {
   _id: string;
   userId: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
   };
   date: Date;
@@ -108,6 +109,7 @@ export default function LeavesPage() {
       await addLeaves(payload);
       console.log(payload);
       setShowModal(false);
+      fetchLeaves();
     } catch (error) {
       console.error(error);
       setShowModal(false);
@@ -134,7 +136,8 @@ export default function LeavesPage() {
     if (user?.role === "admin") {
       baseColumns.unshift({
         header: "Name",
-        accessorFn: (row) => row.userId?.name,
+        accessorFn: (row) =>
+          `${row.userId?.firstName} ${row.userId?.lastName} `,
       });
 
       baseColumns.push({

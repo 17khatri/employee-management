@@ -43,7 +43,8 @@ interface Task {
   assignedTo: {
     _id: string;
     userId: {
-      name: string;
+      firstName: string;
+      lastName: string;
       email: string;
       _id: string;
     };
@@ -53,18 +54,6 @@ interface Task {
     title: string;
   };
   isActive: boolean;
-}
-
-interface Employee {
-  _id: string;
-  userId: {
-    name: string;
-    email: string;
-  };
-  isActive: boolean;
-  departmentId: {
-    name: string;
-  };
 }
 
 interface Project {
@@ -85,14 +74,10 @@ export default function TasksPage() {
     defaultValues: {
       title: "",
       description: "",
-      assignedTo: {
-        _id: "",
-      },
       isActive: true,
     },
   });
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +104,6 @@ export default function TasksPage() {
     try {
       const result = await getEmployees();
       console.log("Fetched employees:", result);
-      setEmployees(result);
     } catch (error) {
       console.error(error);
     } finally {
@@ -128,10 +112,8 @@ export default function TasksPage() {
   };
 
   useEffect(() => {
-    if (user?.role === "admin") {
-      fetchEmployees();
-    }
-  }, [user]);
+    fetchEmployees();
+  }, []);
 
   const fetchProjects = async () => {
     try {
@@ -166,9 +148,6 @@ export default function TasksPage() {
       title: task.title,
       description: task.description,
       projectId: task.projectId,
-      assignedTo: {
-        _id: task.assignedTo._id,
-      },
       status: task.status,
     });
 
@@ -186,7 +165,7 @@ export default function TasksPage() {
         toast.success("Task updated successfully!");
       } else {
         await addTask(data);
-        toast.success("User added successfully!");
+        toast.success("Task added successfully!");
       }
       fetchTasks();
       setShowModal(false);
@@ -195,7 +174,8 @@ export default function TasksPage() {
         description: "",
         assignedTo: {
           userId: {
-            name: "",
+            firstName: "",
+            lastName: "",
             email: "",
           },
         },
@@ -208,7 +188,7 @@ export default function TasksPage() {
       setEditingTask(null);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Failed to add user");
+      toast.error(error.response?.data?.message || "Failed to add task");
     }
   };
 
@@ -221,7 +201,8 @@ export default function TasksPage() {
       description: "",
       assignedTo: {
         userId: {
-          name: "",
+          firstName: "",
+          lastName: "",
           email: "",
         },
       },
@@ -257,15 +238,29 @@ export default function TasksPage() {
 
     if (!task || task.status === newStatus) return;
 
+    // ✅ Ownership check
+    const isOwner = task.assignedTo?.userId?._id === user?.id;
+
+    // 🚫 Block employee if not owner
+    if (user?.role === "employee" && !isOwner) {
+      toast.error("You can update only your own tasks");
+      return;
+    }
+
+    // ✅ Optimistic UI update
     setTasks((prev) =>
       prev.map((t) => (t._id === taskId ? { ...t, status: newStatus } : t)),
     );
 
     try {
-      await editTask(taskId, { status: newStatus });
+      await editTask(taskId, {
+        status: newStatus,
+        assignedTo: task.assignedTo?._id,
+      });
+
       toast.success("Task status updated!");
-    } catch (error) {
-      toast.error("Failed to update status");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update task");
       fetchTasks(); // rollback
     }
   };
@@ -293,9 +288,11 @@ export default function TasksPage() {
   function DraggableTask({
     task,
     children,
+    isDragDisabled,
   }: {
     task: Task;
     children: React.ReactNode;
+    isDragDisabled: Boolean;
   }) {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
       id: task._id,
@@ -332,7 +329,7 @@ export default function TasksPage() {
         >
           <div className="flex items-center p-3 justify-between">
             <h1 className="text-Sxl font-bold">Tasks</h1>
-            {user?.role === "admin" && (
+            {user?.role === "employee" && (
               <Button
                 size="small"
                 variant="contained"
@@ -373,7 +370,8 @@ export default function TasksPage() {
                   Assigned Employee
                 </h2>
                 <p>
-                  <strong>Name:</strong> {viewTask?.assignedTo.userId.name}
+                  <strong>Name:</strong> {viewTask?.assignedTo.userId.firstName}{" "}
+                  {viewTask?.assignedTo.userId.lastName}
                 </p>
                 <p>
                   <strong>Email:</strong> {viewTask?.assignedTo.userId.email}
@@ -409,6 +407,7 @@ export default function TasksPage() {
                       size="small"
                       {...register("title", { required: "Title is required" })}
                       type="text"
+                      label="Enter task title"
                       placeholder="Enter task title"
                       className="w-full"
                       helperText={errors.title ? errors.title.message : ""}
@@ -422,6 +421,7 @@ export default function TasksPage() {
                       {...register("description", {
                         required: "Description is required",
                       })}
+                      label="Enter description"
                       placeholder="Enter description"
                       className="w-full"
                       helperText={
@@ -458,47 +458,6 @@ export default function TasksPage() {
                                 disabled={project._id === "manager"}
                               >
                                 {project.title}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        )}
-                      />
-
-                      {errors.projectId && (
-                        <FormHelperText>
-                          {errors.projectId.message}
-                        </FormHelperText>
-                      )}
-                    </FormControl>
-                  </div>
-
-                  <div>
-                    <FormControl
-                      fullWidth
-                      margin="dense"
-                      error={!!errors.projectId}
-                    >
-                      <InputLabel size="small" id="employee-label">
-                        Select Employee
-                      </InputLabel>
-                      <Controller
-                        name="assignedTo._id"
-                        control={control}
-                        rules={{ required: "Employee is required" }}
-                        render={({ field }) => (
-                          <Select
-                            size="small"
-                            {...field}
-                            labelId="employee-label"
-                            label="Select Employee"
-                          >
-                            {employees.map((employee) => (
-                              <MenuItem
-                                key={employee._id}
-                                value={employee._id}
-                                disabled={employee._id === "manager"}
-                              >
-                                {employee.userId.name}
                               </MenuItem>
                             ))}
                           </Select>
@@ -602,41 +561,63 @@ export default function TasksPage() {
                         <p className="text-sm text-gray-400">No tasks</p>
                       )}
 
-                      {groupedTasks[status]?.map((task: Task) => (
-                        <DraggableTask key={task._id} task={task}>
-                          <div>
-                            <h3 className="font-semibold text-sm">
-                              {task.title}
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {task.description}
-                            </p>
+                      {groupedTasks[status]?.map((task: Task) => {
+                        const isOwner =
+                          task.assignedTo?.userId?._id === user?.id; // make sure it's _id not id
 
-                            <div className="mt-2 text-xs text-gray-600">
-                              👤 {task.assignedTo?.userId?.name}
+                        return (
+                          <DraggableTask
+                            key={task._id}
+                            task={task}
+                            isDragDisabled={
+                              !isOwner && user?.role === "employee"
+                            }
+                          >
+                            <div>
+                              <h3 className="font-semibold text-sm">
+                                {task.title}
+                              </h3>
+
+                              <p className="text-xs text-gray-500 mt-1">
+                                {task.description}
+                              </p>
+
+                              <div className="mt-2 text-xs text-gray-600">
+                                👤 {task.assignedTo?.userId.firstName}{" "}
+                                {task.assignedTo?.userId.lastName}
+                              </div>
+
+                              <div className="flex gap-2 mt-3">
+                                <IconButton
+                                  color="primary"
+                                  onClick={() => handleView(task)}
+                                >
+                                  <VisibilityIcon className="text-sm" />
+                                </IconButton>
+
+                                <IconButton
+                                  onClick={() => handleEdit(task)}
+                                  disabled={
+                                    !isOwner && user?.role === "employee"
+                                  }
+                                >
+                                  <EditIcon className="text-sm" />
+                                </IconButton>
+
+                                <IconButton
+                                  onClick={() => handleDelete(task._id)}
+                                  color="error"
+                                  disabled={
+                                    !isOwner && user?.role === "employee"
+                                  }
+                                >
+                                  <DeleteIcon className="text-sm" />
+                                </IconButton>
+                              </div>
                             </div>
-
-                            <div className="flex gap-2 mt-3">
-                              <IconButton
-                                color="primary"
-                                onClick={() => handleView(task)}
-                              >
-                                <VisibilityIcon className="text-sm" />
-                              </IconButton>
-                              <IconButton onClick={() => handleEdit(task)}>
-                                <EditIcon className="text-sm" />
-                              </IconButton>
-
-                              <IconButton
-                                onClick={() => handleDelete(task._id)}
-                                color="error"
-                              >
-                                <DeleteIcon className="text-sm" />
-                              </IconButton>
-                            </div>
-                          </div>
-                        </DraggableTask>
-                      ))}
+                          </DraggableTask>
+                        );
+                      })}
                     </div>
                   </DroppableColumn>
                 ))}

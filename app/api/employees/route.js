@@ -2,17 +2,17 @@ import "@/models";
 import Employee from "@/models/Employee";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/authMiddleware";
+import { verifyAdmin, verifyUser } from "@/lib/authMiddleware";
 
 export async function GET(req) {
-  const auth = verifyAdmin(req);
+  const auth = verifyUser(req);
   if (auth.error) {
     return auth.error;
   }
   try {
     await connectDB();
     const employees = await Employee.find()
-      .populate("userId", "name email")
+      .populate("userId", "firstName lastName email")
       .populate("departmentId", "name");
 
     return NextResponse.json(employees, { status: 200 });

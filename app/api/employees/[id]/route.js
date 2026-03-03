@@ -15,7 +15,7 @@ export async function GET(req, context) {
     const { id } = await context.params;
 
     const employee = await Employee.findById(id)
-      .populate("userId", "name email")
+      .populate("userId", "firstName lastName email")
       .populate("departmentId", "name");
 
     if (!employee) {

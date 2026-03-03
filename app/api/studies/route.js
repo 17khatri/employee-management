@@ -19,32 +19,102 @@ export async function GET(req) {
   }
 }
 
+// export async function POST(req) {
+//   const auth = verifyAdmin(req);
+//   if (auth.error) {
+//     return auth.error;
+//   }
+//   try {
+//     await connectDB();
+//     const { employeeId, education } = await req.json();
+
+//     if (!employeeId || !education) {
+//       return NextResponse.json(
+//         { message: "Employee ID, grade, and passing year are required" },
+//         { status: 400 },
+//       );
+//     }
+
+//     const studyData = education.map((item) => ({
+//       employeeId,
+//       grade: item.grade,
+//       percentage: item.percentage,
+//       passingYear: item.passingYear,
+//     }));
+
+//     const newStudy = await Study.insertMany(studyData);
+
+//     return NextResponse.json(newStudy, { status: 201 });
+//   } catch (error) {
+//     return NextResponse.json({ error: error.message }, { status: 500 });
+//   }
+// }
+
 export async function POST(req) {
   const auth = verifyAdmin(req);
-  if (auth.error) {
-    return auth.error;
-  }
+  if (auth.error) return auth.error;
+
   try {
     await connectDB();
+
     const { employeeId, education } = await req.json();
 
     if (!employeeId || !education) {
       return NextResponse.json(
-        { message: "Employee ID, grade, and passing year are required" },
+        { message: "Employee ID and education are required" },
         { status: 400 },
       );
     }
 
-    const studyData = education.map((item) => ({
-      employeeId,
-      grade: item.grade,
-      percentage: item.percentage,
-      passingYear: item.passingYear,
-    }));
+    // 🔥 1️⃣ Get existing studies from DB
+    const existingStudies = await Study.find({ employeeId });
 
-    const newStudy = await Study.insertMany(studyData);
+    const existingIds = existingStudies.map((s) => s._id.toString());
 
-    return NextResponse.json(newStudy, { status: 201 });
+    const incomingIds = education.filter((e) => e._id).map((e) => e._id);
+
+    /* =====================================================
+       🔹 2️⃣ DELETE removed records
+    ====================================================== */
+    const idsToDelete = existingIds.filter((id) => !incomingIds.includes(id));
+
+    if (idsToDelete.length > 0) {
+      await Study.deleteMany({ _id: { $in: idsToDelete } });
+    }
+
+    /* =====================================================
+       🔹 3️⃣ UPDATE existing records
+    ====================================================== */
+    for (const item of education) {
+      if (item._id) {
+        await Study.findByIdAndUpdate(item._id, {
+          grade: item.grade,
+          percentage: item.percentage,
+          passingYear: item.passingYear,
+        });
+      }
+    }
+
+    /* =====================================================
+       🔹 4️⃣ INSERT new records
+    ====================================================== */
+    const newItems = education.filter((e) => !e._id);
+
+    if (newItems.length > 0) {
+      const studyData = newItems.map((item) => ({
+        employeeId,
+        grade: item.grade,
+        percentage: item.percentage,
+        passingYear: item.passingYear,
+      }));
+
+      await Study.insertMany(studyData);
+    }
+
+    return NextResponse.json(
+      { message: "Studies synced successfully" },
+      { status: 200 },
+    );
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

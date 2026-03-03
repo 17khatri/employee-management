@@ -25,7 +25,8 @@ import { logout, setAuth } from "../store/authSlice";
 import {
   getLoggedInUser,
   changePassword,
-  editAdminUser,
+  updateLoggedInUser,
+  updateEmployeeProfile,
 } from "../services/auth.service";
 import TextField from "@mui/material/TextField";
 import toast from "react-hot-toast";
@@ -94,13 +95,13 @@ export default function Header() {
       };
 
       try {
-        const updatedUser = await editAdminUser(payload);
-
+        const updatedUser = await updateLoggedInUser(payload);
+        console.log(updatedUser, "updated user in header");
         // update redux
         dispatch(
           setAuth({
             token: localStorage.getItem("token")!,
-            user: updatedUser,
+            user: updatedUser.user,
           }),
         );
 
@@ -112,9 +113,9 @@ export default function Header() {
 
         handleCloseProfile();
         toast.success("Profile updated successfully");
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        toast.success("Something went wrong");
+        toast.error(error.response?.data?.message || "Failed to update user");
       }
 
       return;
@@ -128,15 +129,7 @@ export default function Header() {
         formData.set("profilePhoto", selectedFile);
       }
 
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const updatedUser = await res.json();
+      const updatedUser = await updateEmployeeProfile(formData);
 
       dispatch(
         setAuth({
@@ -235,7 +228,7 @@ export default function Header() {
     }
   };
 
-  const { user, token } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   return (
     <header className="h-12 bg-gray-800 shadow flex items-center justify-between px-6 border-b border-gray-700 relative">

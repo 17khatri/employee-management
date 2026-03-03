@@ -2,6 +2,7 @@ import "@/models";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Project from "@/models/Projects";
+import Task from "@/models/Task";
 import { verifyAdmin, verifyUser } from "@/lib/authMiddleware";
 
 // GET all projects
@@ -99,7 +100,17 @@ export async function DELETE(req) {
 
     const { id } = await req.json();
 
-    const deletedProject = await Project.findByIdAndDelete(id);
+    const tasks = await Task.updateMany(
+      { projectId: id },
+      { isDeleted: true, deletedAt: now },
+    );
+
+    const now = new Date();
+
+    const deletedProject = await Project.findByIdAndUpdate(id, {
+      isDeleted: true,
+      deletedAt: now,
+    });
 
     if (!deletedProject) {
       return NextResponse.json(
@@ -107,7 +118,10 @@ export async function DELETE(req) {
         { status: 404 },
       );
     }
-    return NextResponse.json({ message: "Project deleted" }, { status: 200 });
+    return NextResponse.json(
+      { message: "Project and tasks under that project deleted" },
+      { status: 200 },
+    );
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

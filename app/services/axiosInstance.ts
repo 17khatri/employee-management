@@ -1,12 +1,8 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "/api", // very important
-    headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-    },
-    withCredentials: true, // useful later for cookies
+    baseURL: "/api",
+    withCredentials: true,
 });
 
 axiosInstance.interceptors.request.use((config) => {

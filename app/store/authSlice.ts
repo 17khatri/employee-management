@@ -6,6 +6,13 @@ interface User {
     lastName: string;
     email: string;
     role: string;
+    employee?: {
+        _id?: string;
+        userId?: string;
+        phone?: string;
+        salary?: number;
+        profilePhoto?: string;
+    }
 }
 
 interface AuthState {

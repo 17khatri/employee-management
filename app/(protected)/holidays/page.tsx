@@ -1,7 +1,11 @@
 "use client";
 
 import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { deleteHolidays, getHolidays } from "@/app/services/auth.service";
+import {
+  addHolidays,
+  deleteHolidays,
+  getHolidays,
+} from "@/app/services/auth.service";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import {
@@ -13,8 +17,14 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import Button from "@mui/material/Button";
+import { Controller, useForm } from "react-hook-form";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 interface Holidays {
   _id: string;
@@ -26,6 +36,19 @@ export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<Holidays[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const {
+    handleSubmit,
+    reset,
+    register,
+    control,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      date: null,
+      name: "",
+    },
+  });
 
   const fetchHolidays = async () => {
     try {
@@ -89,20 +112,57 @@ export default function HolidaysPage() {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  const handleModalOpen = () => {
+    setShowModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    reset();
+  };
+
+  const onSubmit = async (data: any) => {
+    try {
+      if (!data.date) return;
+
+      await addHolidays({
+        name: data.name,
+        date: data.date.toDate(), // 🔥 convert dayjs → JS Date
+      });
+
+      toast.success("Holiday added successfully!");
+      handleModalClose();
+      fetchHolidays(); // refresh table
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to add holiday");
+    }
+  };
+
   return (
     <ProtectedRoute allowRoles={["admin"]}>
       <div className="p-4">
-        <h1 className="text-xl font-bold mb-4">Holidays</h1>
+        <div className="flex items-center p-3 justify-between">
+          <h1 className="text-xl font-bold mb-4">Holidays</h1>
 
-        {/* 🔍 Search Input */}
-        <TextField
-          type="text"
-          size="small"
-          placeholder="Search..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
+          {/* 🔍 Search Input */}
+          <TextField
+            type="text"
+            size="small"
+            placeholder="Search..."
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+          />
 
+          <Button
+            onClick={handleModalOpen}
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+          >
+            Add Holidays
+          </Button>
+        </div>
         {loading ? (
           <p>Loading...</p>
         ) : (
@@ -169,6 +229,73 @@ export default function HolidaysPage() {
               </button>
             </div>
           </>
+        )}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 relative
+                                     animate-[fadeIn_.25s_ease]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-xl font-bold text-gray-800">Add Holiday</h2>
+                <button
+                  onClick={handleModalClose}
+                  className="text-gray-400 cursor-pointer hover:text-red-500 text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+                <div className="mb-3">
+                  <TextField
+                    size="small"
+                    {...register("name", {
+                      required: "name is required",
+                    })}
+                    type="text"
+                    className="w-full border p-2 rounded"
+                    label="Holiday Name"
+                    error={!!errors.name}
+                    helperText={errors.name ? errors.name.message : ""}
+                  />
+                </div>
+                <Controller
+                  name="date"
+                  control={control}
+                  rules={{ required: "Date is required" }}
+                  render={({ field }) => (
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Select date"
+                        value={field.value ?? null}
+                        onChange={(newValue) => field.onChange(newValue)}
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            fullWidth: true,
+                            error: !!errors.date,
+                            helperText: errors.date?.message,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  )}
+                />
+                <Button
+                  sx={{ marginTop: "5px" }}
+                  type="submit"
+                  variant="contained"
+                  size="small"
+                >
+                  Submit
+                </Button>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </ProtectedRoute>

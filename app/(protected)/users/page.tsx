@@ -5,8 +5,7 @@ import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { Controller, useForm } from "react-hook-form";
 import {
   addUser,
-  deleteUser,
-  editAdminUser,
+  editUser,
   getUsers,
   getDepartments,
 } from "@/app/services/auth.service";
@@ -21,7 +20,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -154,7 +152,7 @@ export default function UserPage() {
               gender: data.gender,
             };
       if (editingUser) {
-        await editAdminUser(payload);
+        await editUser(editingUser._id, payload);
         toast.success("User updated successfully!");
       } else {
         await addUser(payload);
@@ -190,17 +188,6 @@ export default function UserPage() {
     });
 
     setShowModal(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const result = await deleteUser(id);
-      fetchUsers();
-      toast.success(result.message || "User deleted successfully!");
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to delete user");
-    }
   };
 
   const handleModalClose = () => {
@@ -251,14 +238,6 @@ export default function UserPage() {
               }}
             >
               <EditIcon className="text-sm" />
-            </IconButton>
-            <IconButton
-              color="error"
-              onClick={() => {
-                handleDelete(row.original._id);
-              }}
-            >
-              <DeleteIcon className="text-sm" />
             </IconButton>
           </div>
         ),

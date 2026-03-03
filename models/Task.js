@@ -24,6 +24,14 @@ const TaskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee",
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 const Task = mongoose.models.Task || mongoose.model("Task", TaskSchema);

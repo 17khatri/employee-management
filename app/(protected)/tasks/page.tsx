@@ -178,6 +178,9 @@ export default function TasksPage() {
 
   const handleLog = async (task: Task) => {
     setLogTask(task);
+    reset({
+      status: task.status,
+    });
   };
 
   const handleLogSubmit = async (data: any) => {
@@ -269,7 +272,22 @@ export default function TasksPage() {
       },
       {
         header: "Hours Logged",
-        accessorFn: (row) => row.actualHours,
+        cell: ({ row }) => {
+          const actual = row.original.actualHours;
+          const estimated = row.original.estimationHours;
+
+          return (
+            <span
+              className={
+                actual > estimated
+                  ? "text-red-500 font-semibold"
+                  : "text-gray-800"
+              }
+            >
+              {actual ?? 0}
+            </span>
+          );
+        },
       },
       {
         header: "Action",
@@ -338,6 +356,16 @@ export default function TasksPage() {
     },
   });
 
+  const totalTasks = tasks.length;
+
+  const todoTasks = tasks.filter((t) => t.status === "pending").length;
+
+  const inProgressTasks = tasks.filter(
+    (t) => t.status === "in-progress",
+  ).length;
+
+  const doneTasks = tasks.filter((t) => t.status === "completed").length;
+
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="p-4">
@@ -366,27 +394,13 @@ export default function TasksPage() {
                 className="space-y-2 mt-4"
               >
                 <div>
-                  {/* <TextField
-                    size="small"
-                    {...register("actualHours", {
-                      required: "actualHours is required",
-                    })}
-                    type="number"
-                    label="Log Hours"
-                    placeholder="Log Hours"
-                    className="w-full"
-                    helperText={
-                      errors.actualHours ? errors.actualHours.message : ""
-                    }
-                    error={!!errors.actualHours}
-                  /> */}
                   <Controller
-                    name="estimationHours"
+                    name="actualHours"
                     control={control}
-                    rules={{ required: "Estimation Hours is required" }}
+                    rules={{ required: "Actual Hours is required" }}
                     render={({ field, fieldState }) => (
                       <NumberField
-                        label="Estimation Hours"
+                        label="Log Hours"
                         size="small"
                         min={0}
                         step={0.01}
@@ -684,6 +698,33 @@ export default function TasksPage() {
                   Add Task
                 </Button>
               )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="bg-white shadow rounded-xl p-4 border">
+                <p className="text-xs text-gray-500">Total Tasks</p>
+                <h2 className="text-2xl font-bold">{totalTasks}</h2>
+              </div>
+
+              <div className="bg-blue-50 shadow rounded-xl p-4 border">
+                <p className="text-xs text-gray-500">Todo Tasks</p>
+                <h2 className="text-2xl font-bold text-blue-600">
+                  {todoTasks}
+                </h2>
+              </div>
+
+              <div className="bg-yellow-50 shadow rounded-xl p-4 border">
+                <p className="text-xs text-gray-500">In Progress</p>
+                <h2 className="text-2xl font-bold text-yellow-600">
+                  {inProgressTasks}
+                </h2>
+              </div>
+
+              <div className="bg-green-50 shadow rounded-xl p-4 border">
+                <p className="text-xs text-gray-500">Completed Tasks</p>
+                <h2 className="text-2xl font-bold text-green-600">
+                  {doneTasks}
+                </h2>
+              </div>
             </div>
             <table className="min-w-full mt-2 bg-white shadow rounded table-fixed">
               <thead>

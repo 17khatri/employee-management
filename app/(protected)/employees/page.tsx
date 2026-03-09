@@ -31,6 +31,8 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Employee {
   _id: string;
@@ -163,6 +165,91 @@ export default function EmployeesPage() {
     });
   };
 
+  const downloadEmployeePDF = async (employee: Employee) => {
+    try {
+      // Fetch employee studies
+      const studies = await getEmployeesStudies(employee._id);
+
+      const doc = new jsPDF();
+
+      const fullName = `${employee.userId.firstName} ${employee.userId.lastName}`;
+
+      // Company Header
+      doc.setFontSize(18);
+      doc.text("Employee Profile Report", 14, 15);
+
+      doc.setFontSize(10);
+      doc.text("Company HR Management System", 14, 22);
+
+      // Line separator
+      doc.line(14, 25, 196, 25);
+
+      // Employee Details
+      doc.setFontSize(14);
+      doc.text("Employee Information", 14, 35);
+
+      const employeeDetails = [
+        ["Name", fullName],
+        ["Email", employee.userId.email],
+        ["Department", employee.departmentId?.name || "-"],
+        ["Phone", (employee as any).phone || "-"],
+        ["Salary", (employee as any).salary || "-"],
+        ["Status", employee.isActive ? "Active" : "Inactive"],
+        [
+          "Birth Date",
+          (employee as any).birthDate
+            ? new Date((employee as any).birthDate).toLocaleDateString()
+            : "-",
+        ],
+        ["Gender", (employee as any).gender || "-"],
+      ];
+
+      autoTable(doc, {
+        startY: 40,
+        head: [["Field", "Value"]],
+        body: employeeDetails,
+        theme: "grid",
+      });
+
+      // Education Section
+      const studiesStart = (doc as any).lastAutoTable.finalY + 10;
+
+      doc.setFontSize(14);
+      doc.text("Education Details", 14, studiesStart);
+
+      const educationData =
+        studies?.length > 0
+          ? studies.map((study: any) => [
+              study.grade || "-",
+              study.percentage || "-",
+              study.passingYear || "-",
+            ])
+          : [["No education records found", "", ""]];
+
+      autoTable(doc, {
+        startY: studiesStart + 5,
+        head: [["Grade", "Percentage", "Passing Year"]],
+        body: educationData,
+        theme: "grid",
+      });
+
+      // Footer
+      const pageHeight = doc.internal.pageSize.height;
+
+      doc.setFontSize(10);
+      doc.text(
+        `Generated on: ${new Date().toLocaleString()}`,
+        14,
+        pageHeight - 10,
+      );
+
+      doc.save(`${fullName}-employee-profile.pdf`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   const columns = useMemo<ColumnDef<Employee>[]>(
     () => [
       {
@@ -208,6 +295,14 @@ export default function EmployeesPage() {
               onClick={() => handleStudyModalOpen(row.original)}
             >
               Add Studies
+            </Button>
+            <Button
+              size="small"
+              color="error"
+              variant="contained"
+              onClick={() => downloadEmployeePDF(row.original)}
+            >
+              Download PDF
             </Button>
           </div>
         ),

@@ -90,7 +90,7 @@ export default function DashboardPage() {
   const [employeesProjects, setEmployeesProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useSelector((state: RootState) => state?.auth.user);
   const {
     handleSubmit,
     control,
@@ -230,6 +230,29 @@ export default function DashboardPage() {
     }
   };
 
+  const totalHours = (() => {
+    if (
+      !todayAttendance &&
+      (!control._formValues?.inTime || !control._formValues?.outTime)
+    )
+      return null;
+
+    const inTime = control._formValues?.inTime;
+    const outTime = control._formValues?.outTime;
+
+    if (!inTime || !outTime) return null;
+
+    const start = dayjs(inTime);
+    const end = dayjs(outTime);
+
+    const diffMinutes = end.diff(start, "minute");
+
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+
+    return `${hours}h ${minutes}m`;
+  })();
+
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="min-h-screen w-full bg-gradient-to-br from-indigo-100 via-white to-blue-100 p-8">
@@ -299,6 +322,12 @@ export default function DashboardPage() {
                 <Button variant="contained" className="w-full" type="submit">
                   {todayAttendance ? "Update Time" : "Enter Time"}
                 </Button>
+                {control._formValues?.inTime &&
+                  control._formValues?.outTime && (
+                    <p className="text-sm font-semibold text-gray-700">
+                      Total Hours: {totalHours}
+                    </p>
+                  )}
               </form>
             )}
           </div>

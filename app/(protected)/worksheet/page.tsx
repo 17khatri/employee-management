@@ -2,10 +2,12 @@
 
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { getWorksheetData } from "@/app/services/auth.service";
+import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
+import * as XLSX from "xlsx";
 
 import {
   ColumnDef,
@@ -113,51 +115,80 @@ export default function WorksheetPage() {
     );
   }
 
+  const exportToExcel = () => {
+    const rows: any[] = [];
+
+    data.forEach((day) => {
+      day.tasks.forEach((task) => {
+        rows.push({
+          Date: day.date,
+          Title: task.title,
+          Description: task.description,
+          Status: task.status,
+          "Estimated Hours": task.estimationHours,
+          "Actual Hours": task.actualHours ?? "",
+          "Created At": new Date(task.created_at).toLocaleString(),
+        });
+      });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Worksheet");
+
+    XLSX.writeFile(workbook, `worksheet-${month}-${year}.xlsx`);
+  };
+
   return (
     <ProtectedRoute allowRoles={["employee"]}>
       <div className="p-4 flex flex-col h-full">
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-Sxl font-bold">WorkSheet</h1>
         </div>
-        <div className="flex gap-4 p-3">
-          {/* Year Select */}
-          <FormControl size="small" className="w-32">
-            <InputLabel>Year</InputLabel>
-            <Select
-              value={year}
-              label="Year"
-              onChange={(e) => setYear(Number(e.target.value))}
-            >
-              {[2024, 2025, 2026, 2027].map((y) => (
-                <MenuItem key={y} value={y}>
-                  {y}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <div className="flex justify-between p-3">
+          <div className="flex gap-4">
+            <FormControl size="small" className="w-32">
+              <InputLabel>Year</InputLabel>
+              <Select
+                value={year}
+                label="Year"
+                onChange={(e) => setYear(Number(e.target.value))}
+              >
+                {[2024, 2025, 2026, 2027].map((y) => (
+                  <MenuItem key={y} value={y}>
+                    {y}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          {/* Month Select */}
-          <FormControl size="small" className="w-40">
-            <InputLabel>Month</InputLabel>
-            <Select
-              value={month}
-              label="Month"
-              onChange={(e) => setMonth(Number(e.target.value))}
-            >
-              <MenuItem value={1}>January</MenuItem>
-              <MenuItem value={2}>February</MenuItem>
-              <MenuItem value={3}>March</MenuItem>
-              <MenuItem value={4}>April</MenuItem>
-              <MenuItem value={5}>May</MenuItem>
-              <MenuItem value={6}>June</MenuItem>
-              <MenuItem value={7}>July</MenuItem>
-              <MenuItem value={8}>August</MenuItem>
-              <MenuItem value={9}>September</MenuItem>
-              <MenuItem value={10}>October</MenuItem>
-              <MenuItem value={11}>November</MenuItem>
-              <MenuItem value={12}>December</MenuItem>
-            </Select>
-          </FormControl>
+            {/* Month Select */}
+            <FormControl size="small" className="w-40">
+              <InputLabel>Month</InputLabel>
+              <Select
+                value={month}
+                label="Month"
+                onChange={(e) => setMonth(Number(e.target.value))}
+              >
+                <MenuItem value={1}>January</MenuItem>
+                <MenuItem value={2}>February</MenuItem>
+                <MenuItem value={3}>March</MenuItem>
+                <MenuItem value={4}>April</MenuItem>
+                <MenuItem value={5}>May</MenuItem>
+                <MenuItem value={6}>June</MenuItem>
+                <MenuItem value={7}>July</MenuItem>
+                <MenuItem value={8}>August</MenuItem>
+                <MenuItem value={9}>September</MenuItem>
+                <MenuItem value={10}>October</MenuItem>
+                <MenuItem value={11}>November</MenuItem>
+                <MenuItem value={12}>December</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
+          <Button onClick={exportToExcel} variant="contained" color="success">
+            Export to Excel
+          </Button>
         </div>
         {data.length === 0 ? (
           <div className="p-6 text-gray-500 text-sm">

@@ -8,7 +8,6 @@ import { ROLES } from "@/app/constants/roles";
 import Employee from "@/models/Employee";
 import crypto from "crypto";
 import { sendEmail } from "@/lib/sendEmail";
-import path from "path";
 
 function generatePassword(length = 8) {
   const chars =
@@ -31,7 +30,7 @@ export async function GET(req) {
   try {
     await connectDB();
 
-    const users = await User.find()
+    const users = await User.find({ deletedAt: null })
       .select("-password")
       .populate({
         path: "employee",

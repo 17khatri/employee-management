@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     await connectDB();
-    const roles = await Role.find();
+    const roles = await Role.find({ deletedAt: null });
 
     return NextResponse.json(roles, { status: 200 });
   } catch (error) {

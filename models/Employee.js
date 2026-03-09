@@ -35,6 +35,10 @@ const EmployeeSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 const Employee =

@@ -11,7 +11,7 @@ export async function GET(req) {
   }
   try {
     await connectDB();
-    const departments = await Department.find();
+    const departments = await Department.find({ deletedAt: null });
 
     return NextResponse.json(departments, { status: 200 });
   } catch (error) {
@@ -48,6 +48,39 @@ export async function POST(req) {
     await newDepartment.save();
 
     return NextResponse.json(newDepartment, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req) {
+  const auth = verifyAdmin(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
+  try {
+    connectDB();
+
+    const { id } = req.json();
+
+    const now = new Date();
+
+    const deletedDepartment = await Department.findByIdAndUpdate(id, {
+      deletedAt: now,
+    });
+
+    if (!deletedDepartment) {
+      return NextResponse.json(
+        { message: "Department not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Departmend deleted" },
+      { status: 200 },
+    );
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

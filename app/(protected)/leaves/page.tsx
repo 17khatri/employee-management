@@ -48,6 +48,7 @@ export default function LeavesPage() {
   const [leave, setLeave] = useState<Leaves[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
   const user = useSelector((state: RootState) => state.auth.user);
   const {
     handleSubmit,
@@ -200,8 +201,14 @@ export default function LeavesPage() {
     return baseColumns;
   }, [user]);
 
+  const filteredUsers = useMemo(() => {
+    if (statusFilter === "all") return leave;
+
+    return leave.filter((l) => l.leaveStatus === statusFilter);
+  }, [leave, statusFilter]);
+
   const table = useReactTable({
-    data: leave,
+    data: filteredUsers,
     columns,
     state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
@@ -227,13 +234,28 @@ export default function LeavesPage() {
         </div>
 
         {/* 🔍 Search Input */}
-        <TextField
-          type="text"
-          size="small"
-          placeholder="Search..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <TextField
+            type="text"
+            size="small"
+            placeholder="Search..."
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+          />
+          <FormControl size="small" className="w-40">
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="Pending">Pending</MenuItem>
+              <MenuItem value="Approved">Approved</MenuItem>
+              <MenuItem value="Rejected">Rejected</MenuItem>
+            </Select>
+          </FormControl>
+        </div>
         <table className="min-w-full bg-white shadow rounded mt-2">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (

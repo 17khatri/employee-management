@@ -232,7 +232,9 @@ export default function Header() {
 
   return (
     <header className="h-12 bg-gray-800 shadow flex items-center justify-between px-6 border-b border-gray-700 relative">
-      <h1 className="font-semibold text-white">Welcome, {user?.firstName}</h1>
+      <h1 className="font-semibold text-white">
+        Welcome, {user?.firstName} {user?.lastName}{" "}
+      </h1>
       <Tooltip title="Account settings">
         <IconButton
           onClick={handleClick}

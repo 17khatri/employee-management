@@ -8,7 +8,7 @@ export async function GET() {
   try {
     await connectDB();
 
-    const holidays = await Holiday.find();
+    const holidays = await Holiday.find({ deletedAt: null });
 
     return NextResponse.json(holidays, { status: 200 });
   } catch (error) {
@@ -63,7 +63,9 @@ export async function DELETE(req) {
       return NextResponse.json({ message: "Id is required" }, { status: 404 });
     }
 
-    const deletedHoliday = await Holiday.findByIdAndDelete(id);
+    const deletedHoliday = await Holiday.findByIdAndUpdate(id, {
+      deletedAt: now,
+    });
 
     if (!deletedHoliday) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });

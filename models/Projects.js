@@ -9,9 +9,20 @@ const ProjectSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
+    assignedTo: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Employee",
+        required: true,
+      },
+    ],
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
     },
     deletedAt: {
       type: Date,

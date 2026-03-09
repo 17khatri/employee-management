@@ -13,7 +13,7 @@ export async function GET(req) {
   }
   try {
     await connectDB();
-    const projects = await Project.find().populate({
+    const projects = await Project.find({ deletedAt: null }).populate({
       path: "tasks",
       select: "title description assignedTo",
       populate: {
@@ -21,7 +21,7 @@ export async function GET(req) {
         select: "userId",
         populate: {
           path: "userId",
-          select: "name email",
+          select: "firstName lastName email",
         },
       },
     });
@@ -40,11 +40,12 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    const { title, description } = await req.json();
+    const { title, description, assignedTo, startDate, endDate } =
+      await req.json();
 
-    if (!title) {
+    if (!title || !assignedTo || !startDate || !endDate) {
       return NextResponse.json(
-        { message: "Title is required" },
+        { message: "Title, assfnedTo, startDate and endDate are required" },
         { status: 400 },
       );
     }
@@ -52,6 +53,9 @@ export async function POST(req) {
     const newProject = new Project({
       title,
       description,
+      assignedTo,
+      startDate,
+      endDate,
     });
 
     await newProject.save();
@@ -70,11 +74,12 @@ export async function PATCH(req) {
   try {
     await connectDB();
 
-    const { id, title, description } = await req.json();
+    const { id, title, description, assignedTo, startDate, endDate } =
+      await req.json();
 
     const updatedProject = await Project.findByIdAndUpdate(
       id,
-      { title, description },
+      { title, description, assignedTo, startDate, endDate },
       { new: true },
     );
 
@@ -100,15 +105,11 @@ export async function DELETE(req) {
 
     const { id } = await req.json();
 
-    const tasks = await Task.updateMany(
-      { projectId: id },
-      { isDeleted: true, deletedAt: now },
-    );
-
     const now = new Date();
 
+    const tasks = await Task.updateMany({ projectId: id }, { deletedAt: now });
+
     const deletedProject = await Project.findByIdAndUpdate(id, {
-      isDeleted: true,
       deletedAt: now,
     });
 

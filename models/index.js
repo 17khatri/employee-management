@@ -7,3 +7,4 @@ import "./Meeting";
 import "./Studies";
 import "./Leave";
 import "./Holiday";
+import "./Attendance";

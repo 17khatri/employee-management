@@ -100,6 +100,7 @@ export default function UserPage() {
   const [showModal, setShowModal] = useState(false);
   const [globalFilter, setGlobalFilter] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
   const selectedRole = watch("role");
   const fetchUsers = async () => {
     try {
@@ -246,14 +247,27 @@ export default function UserPage() {
     [],
   );
 
+  const filteredUsers = useMemo(() => {
+    if (statusFilter === "all") return users;
+
+    return users.filter((user) =>
+      statusFilter === "active" ? user.isActive : !user.isActive,
+    );
+  }, [users, statusFilter]);
+
   const table = useReactTable({
-    data: users,
+    data: filteredUsers,
     columns,
     state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 5,
+      },
+    },
   });
 
   return (
@@ -261,14 +275,6 @@ export default function UserPage() {
       <div className="p-4">
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-Sxl font-bold">Users</h1>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={handleModalOpen}
-          >
-            Add User
-          </Button>
         </div>
 
         {showModal && (
@@ -557,16 +563,41 @@ export default function UserPage() {
         {loading ? (
           <p>Loading users...</p>
         ) : (
-          <div className="overflow-x-auto">
-            <TextField
-              size="small"
-              type="text"
-              placeholder="Search..."
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="border p-2 rounded mb-4 w-64"
-            />
-            <table className="min-w-full mt-2 bg-white rounded-xl shadow">
+          <div className="overflow-x-auto flex flex-col">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 mt-2">
+                <TextField
+                  size="small"
+                  type="text"
+                  placeholder="Search..."
+                  value={globalFilter ?? ""}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="border p-2 rounded mb-4 w-64"
+                />
+                <FormControl size="small" className="w-40">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label="Status"
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <MenuItem value="all">All</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={handleModalOpen}
+                sx={{ height: "36px" }}
+              >
+                Add User
+              </Button>
+            </div>
+            <table className="min-w-full flex-1 mt-2 bg-white rounded-xl shadow">
               <thead>
                 <tr className="bg-gray-100 text-left">
                   <th className="p-3 text-xs">Name</th>

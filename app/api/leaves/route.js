@@ -11,8 +11,7 @@ export async function GET(req) {
   }
   try {
     await connectDB();
-    const leavess = await Leave.find();
-    console.log(leavess, "leavesss");
+    const leavess = await Leave.find({ isDeleted: false });
     const leaves = await Leave.find().populate({
       path: "userId",
       select: "firstName lastName email",

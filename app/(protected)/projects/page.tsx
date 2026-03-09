@@ -6,6 +6,7 @@ import {
   addProject,
   deleteProject,
   editProject,
+  getEmployees,
   getProjects,
 } from "@/app/services/auth.service";
 import {
@@ -17,7 +18,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -27,6 +28,15 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import FormHelperText from "@mui/material/FormHelperText";
+import MenuItem from "@mui/material/MenuItem";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { PickerValue } from "@mui/x-date-pickers/internals";
 
 interface Task {
   _id: string;
@@ -35,8 +45,24 @@ interface Task {
   projectId: string;
   assignedTo: {
     _id: string;
-    name: string;
+    userId: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  };
+}
+
+interface Employee {
+  _id: string;
+  userId: {
+    firstName: string;
+    lastName: string;
     email: string;
+  };
+  isActive: boolean;
+  departmentId: {
+    name: string;
   };
 }
 
@@ -44,6 +70,9 @@ interface Project {
   _id: string;
   title: string;
   description: string;
+  assignedTo: string[];
+  startDate: PickerValue | undefined;
+  endDate: PickerValue | undefined;
   tasks: Task[];
 }
 
@@ -52,17 +81,22 @@ export default function ProjectsPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<Project>({
     defaultValues: {
       title: "",
       description: "",
+      startDate: null,
+      endDate: null,
+      assignedTo: [],
     },
   });
   const [projects, setProjects] = useState<Project[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [viewProject, setViewProject] = useState<Project | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -80,6 +114,21 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     fetchProjects();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const result = await getEmployees();
+      setEmployees(result);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -167,8 +216,12 @@ export default function ProjectsPage() {
         accessorKey: "description",
       },
       {
+        id: "assignedTo",
         header: "Assigned To",
-        accessorKey: "assignedTo.userId.name",
+        accessorFn: (row) =>
+          row.assignedTo?.userId
+            ? `${row.assignedTo.userId.firstName} ${row.assignedTo.userId.lastName}`
+            : "Unassigned",
       },
     ],
     [],
@@ -182,6 +235,11 @@ export default function ProjectsPage() {
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 5,
+      },
+    },
   });
 
   const taskTable = useReactTable({
@@ -191,7 +249,7 @@ export default function ProjectsPage() {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 3, // 🔥 Max 3 tasks per page
+        pageSize: 3,
       },
     },
   });
@@ -235,30 +293,10 @@ export default function ProjectsPage() {
 
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
-      <div className="p-4">
+      <div className="p-4 flex flex-col h-full">
         <div className="flex items-center p-3 justify-between">
-          <h1 className="text-Sxl font-bold">Projects</h1>
-          {user?.role === "admin" && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={handleModalOpen}
-            >
-              Add Project
-            </Button>
-          )}
+          <h1 className="text-Sxl font-bold">All Projects</h1>
         </div>
-
-        {/* 🔍 Search Input */}
-        <TextField
-          size="small"
-          type="text"
-          placeholder="Search..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="border p-2 rounded mb-4 w-64"
-        />
 
         {viewProject && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -291,8 +329,8 @@ export default function ProjectsPage() {
                 </h3>
 
                 {viewProject.tasks && viewProject.tasks.length > 0 ? (
-                  <>
-                    <table className="min-w-full bg-white border rounded">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full flex-1 bg-white border rounded">
                       <thead>
                         {taskTable.getHeaderGroups().map((headerGroup) => (
                           <tr key={headerGroup.id}>
@@ -353,7 +391,7 @@ export default function ProjectsPage() {
                         Next
                       </button>
                     </div>
-                  </>
+                  </div>
                 ) : (
                   <p className="text-gray-500 text-sm">No tasks available.</p>
                 )}
@@ -384,7 +422,7 @@ export default function ProjectsPage() {
 
               {/* Form */}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
-                <div>
+                <div className="mb-3">
                   <TextField
                     size="small"
                     {...register("title", { required: "Title is required" })}
@@ -397,7 +435,7 @@ export default function ProjectsPage() {
                   />
                 </div>
 
-                <div>
+                <div className="">
                   <TextField
                     size="small"
                     {...register("description", {
@@ -410,6 +448,95 @@ export default function ProjectsPage() {
                       errors.description ? errors.description.message : ""
                     }
                     error={!!errors.description}
+                  />
+                </div>
+
+                <FormControl
+                  fullWidth
+                  margin="dense"
+                  error={!!errors.assignedTo}
+                  sx={{
+                    marginTop: "0",
+                  }}
+                >
+                  <InputLabel size="small" id="attendees-label">
+                    assignedTo
+                  </InputLabel>
+
+                  <Controller
+                    name="assignedTo"
+                    control={control}
+                    defaultValue={[]}
+                    rules={{ required: "Select at least one attendee" }}
+                    render={({ field }) => (
+                      <Select
+                        multiple
+                        labelId="assignedTo-label"
+                        label="attendees"
+                        {...field}
+                        size="small"
+                      >
+                        {employees
+                          .filter((u) => u._id !== user?.id)
+                          .map((u) => (
+                            <MenuItem key={u._id} value={u._id}>
+                              {u.userId?.firstName} {u.userId?.lastName}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    )}
+                  />
+
+                  <FormHelperText>{errors.assignedTo?.message}</FormHelperText>
+                </FormControl>
+
+                <Controller
+                  name="startDate"
+                  control={control}
+                  rules={{ required: "Date is required" }}
+                  render={({ field }) => (
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Select start date"
+                        disablePast
+                        value={field.value ?? null}
+                        onChange={(newValue) => field.onChange(newValue)}
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            fullWidth: true,
+                            error: !!errors.startDate,
+                            helperText: errors.startDate?.message,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  )}
+                />
+
+                <div className="mt-2">
+                  <Controller
+                    name="endDate"
+                    control={control}
+                    rules={{ required: "Date is required" }}
+                    render={({ field }) => (
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          label="Select end date"
+                          disablePast
+                          value={field.value ?? null}
+                          onChange={(newValue) => field.onChange(newValue)}
+                          slotProps={{
+                            textField: {
+                              size: "small",
+                              fullWidth: true,
+                              error: !!errors.startDate,
+                              helperText: errors.startDate?.message,
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                    )}
                   />
                 </div>
 
@@ -442,7 +569,28 @@ export default function ProjectsPage() {
           <p>Loading...</p>
         ) : (
           <>
-            <table className="min-w-full mt-2 bg-white shadow rounded">
+            <div className="flex items-center justify-between">
+              {/* 🔍 Search Input */}
+              <TextField
+                size="small"
+                type="text"
+                placeholder="Search..."
+                value={globalFilter ?? ""}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="border p-2 rounded mb-4 w-64"
+              />
+              {user?.role === "admin" && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={handleModalOpen}
+                >
+                  Add Project
+                </Button>
+              )}
+            </div>
+            <table className="min-w-full mt-2 bg-white shadow rounded table-fixed">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr className="text-sm" key={headerGroup.id}>
@@ -463,9 +611,12 @@ export default function ProjectsPage() {
 
               <tbody>
                 {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="border-t">
+                  <tr key={row.id} className="border-t h-12">
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="p-3 text-xs">
+                      <td
+                        key={cell.id}
+                        className="px-3 text-xs h-12 align-middle"
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

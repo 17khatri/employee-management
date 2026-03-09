@@ -11,7 +11,7 @@ export async function GET(req) {
   }
   try {
     await connectDB();
-    const employees = await Employee.find()
+    const employees = await Employee.find({ deletedAt: null })
       .populate("userId", "firstName lastName email")
       .populate("departmentId", "name");
 

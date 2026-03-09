@@ -27,6 +27,10 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import { useFieldArray, useForm } from "react-hook-form";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 
 interface Employee {
   _id: string;
@@ -61,6 +65,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [addStudies, setAddStudies] = useState<Boolean>(false);
+  const [statusFilter, setStatusFilter] = useState("all");
   const { control, register, handleSubmit, reset } = useForm<StudyFormValues>({
     defaultValues: {
       education: [{ grade: "", percentage: "", passingYear: "" }],
@@ -211,14 +216,27 @@ export default function EmployeesPage() {
     [],
   );
 
+  const filteredUsers = useMemo(() => {
+    if (statusFilter === "all") return employees;
+
+    return employees.filter((employee) =>
+      statusFilter === "active" ? employee.isActive : !employee.isActive,
+    );
+  }, [employees, statusFilter]);
+
   const table = useReactTable({
-    data: employees,
+    data: filteredUsers,
     columns,
     state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 5,
+      },
+    },
   });
 
   const onSubmit = async (data: StudyFormValues) => {
@@ -237,13 +255,6 @@ export default function EmployeesPage() {
         <h1 className="text-xl font-bold mb-4">Employees</h1>
 
         {/* 🔍 Search Input */}
-        <TextField
-          type="text"
-          size="small"
-          placeholder="Search..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
 
         {addStudies && selectedEmployee && (
           <div
@@ -388,8 +399,30 @@ export default function EmployeesPage() {
         {loading ? (
           <p>Loading...</p>
         ) : (
-          <>
-            <table className="min-w-full bg-white shadow rounded mt-2">
+          <div className="overflow-x-auto flex flex-col">
+            <div className="flex gap-2 mt-2">
+              <TextField
+                type="text"
+                size="small"
+                placeholder="Search..."
+                value={globalFilter ?? ""}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="border p-2 rounded mb-4 w-64"
+              />
+              <FormControl size="small" className="w-40">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </div>
+            <table className="min-w-full flex-1 bg-white shadow rounded mt-2">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr className="text-sm" key={headerGroup.id}>
@@ -450,7 +483,7 @@ export default function EmployeesPage() {
                 Next
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </ProtectedRoute>

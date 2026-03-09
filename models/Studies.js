@@ -17,6 +17,10 @@ const StudySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 const Study = mongoose.models.Study || mongoose.model("Study", StudySchema);

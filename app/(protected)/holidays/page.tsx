@@ -145,15 +145,6 @@ export default function HolidaysPage() {
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-xl font-bold mb-4">Holidays</h1>
 
-          {/* 🔍 Search Input */}
-          <TextField
-            type="text"
-            size="small"
-            placeholder="Search..."
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-          />
-
           <Button
             onClick={handleModalOpen}
             variant="contained"
@@ -167,6 +158,14 @@ export default function HolidaysPage() {
           <p>Loading...</p>
         ) : (
           <>
+            {/* 🔍 Search Input */}
+            <TextField
+              type="text"
+              size="small"
+              placeholder="Search..."
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+            />
             <table className="min-w-full bg-white shadow rounded mt-2">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (

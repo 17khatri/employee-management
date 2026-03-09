@@ -31,6 +31,10 @@ const MeetingSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 const Meeting =

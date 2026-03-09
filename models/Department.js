@@ -9,6 +9,10 @@ const DepartmentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 const Department =

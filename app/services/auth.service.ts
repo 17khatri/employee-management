@@ -96,6 +96,11 @@ export const getTasks = async () => {
     return response.data;
 }
 
+export const getEmployeesTask = async () => {
+    const response = await axiosInstance.get("/tasks/employee")
+    return response.data
+}
+
 export const viewTask = async (id: any) => {
     const response = await axiosInstance.get(`/tasks/${id}`);
     return response.data;
@@ -118,19 +123,22 @@ export const addTask = async (data: {
 };
 
 export const editTask = async (id: any, data: {
-    title: string;
-    description: string;
-    status: string;
-    assignedTo: string;
+    title?: string;
+    description?: string;
+    status?: string;
 }) => {
     const response = await axiosInstance.patch(`/tasks`, { id: id, ...data });
     return response.data;
 };
 
-
 export const getProjects = async () => {
     const response = await axiosInstance.get("/projects");
     return response.data;
+}
+
+export const getEmployeesProject = async () => {
+    const response = await axiosInstance.get("/projects/employee")
+    return response.data
 }
 
 export const deleteProject = async (id: any) => {
@@ -250,5 +258,41 @@ export const deleteHolidays = async (id: any) => {
 
 export const bdayEmployee = async () => {
     const response = await axiosInstance.get("/upcoming-bday")
+    return response.data
+}
+
+export const postAttendance = async (data: {
+    inTime: string;
+    outTime: string
+}) => {
+    const response = await axiosInstance.post("/attendance", data)
+    return response.data
+}
+
+export const updateAttendance = async (id: string, data: {
+    inTime: string
+    outTime: string
+}) => {
+    const response = await axiosInstance.patch("attendance", { id: id, ...data })
+    return response.data
+}
+
+export const getTodaysAttendance = async () => {
+    const response = await axiosInstance.get("/attendance/employee/today")
+    return response.data
+}
+
+export const getEmployeesAttendance = async () => {
+    const response = await axiosInstance.get("/attendance/employee")
+    return response.data
+}
+
+export const getAttendance = async () => {
+    const response = await axiosInstance.get("/attendance")
+    return response.data
+}
+
+export const getWorksheetData = async (month: number, year: number) => {
+    const response = await axiosInstance.get(`/worksheet?month=${month}&year=${year}`)
     return response.data
 }

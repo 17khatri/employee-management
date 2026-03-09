@@ -22,6 +22,10 @@ const LeaveSchema = new mongoose.Schema({
     enum: LEAVE_STATUS_VALUES,
     default: "Pending",
   },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 const Leave = mongoose.models.Leave || mongoose.model("Leave", LeaveSchema);

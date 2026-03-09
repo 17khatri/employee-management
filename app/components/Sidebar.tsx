@@ -12,6 +12,8 @@ import {
   AccessAlarm as AccessAlarmIcon,
 } from "@mui/icons-material";
 import CastleIcon from "@mui/icons-material/Castle";
+import TouchAppIcon from "@mui/icons-material/TouchApp";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 export default function Sidebar() {
@@ -95,6 +97,24 @@ export default function Sidebar() {
           >
             <CastleIcon className="inline mr-3" />
             Holidays
+          </Link>
+        )}
+
+        <Link
+          href="/attendance"
+          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/attendance" ? "bg-gray-700" : ""}`}
+        >
+          <TouchAppIcon className="inline mr-3" />
+          Attendance
+        </Link>
+
+        {user?.role === "employee" && (
+          <Link
+            href="/worksheet"
+            className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/worksheet" ? "bg-gray-700" : ""}`}
+          >
+            <ListAltIcon className="inline mr-3" />
+            Worksheet
           </Link>
         )}
 

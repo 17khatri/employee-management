@@ -16,11 +16,18 @@ const LeaveSchema = new mongoose.Schema({
   leaveType: {
     type: String,
     enum: LEAVE_TYPES_VALUES,
+    required: true,
   },
   leaveStatus: {
     type: String,
     enum: LEAVE_STATUS_VALUES,
     default: "Pending",
+    required: true,
+  },
+  reason: {
+    type: String,
+    required: true,
+    required: true,
   },
   deletedAt: {
     type: Date,

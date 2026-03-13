@@ -1,3 +1,4 @@
+import { Dayjs } from "dayjs";
 import { StudyFormValues } from "../(protected)/employees/page";
 import axiosInstance from "./axiosInstance";
 
@@ -77,7 +78,7 @@ export const getEmployees = async () => {
 }
 
 export const deleteEmployee = async (id: any) => {
-    const response = await axiosInstance.delete(`/employees`, { data: { employeeId: id } });
+    const response = await axiosInstance.delete(`/employees`, { data: { id: id } });
     return response.data;
 };
 
@@ -113,7 +114,7 @@ export const deleteTask = async (id: any) => {
 
 export const addTask = async (data: {
     title: string;
-    description: string;
+    description?: string;
     status: string;
     assignedTo: string;
     projectId: string;
@@ -148,7 +149,7 @@ export const deleteProject = async (id: any) => {
 
 export const addProject = async (data: {
     name: string;
-    description: string;
+    description?: string;
 }) => {
     const response = await axiosInstance.post("/projects", data);
     return response.data;
@@ -156,7 +157,7 @@ export const addProject = async (data: {
 
 export const editProject = async (id: any, data: {
     name: string;
-    description: string;
+    description?: string;
 }) => {
     const response = await axiosInstance.patch(`/projects`, { id: id, ...data });
     return response.data;
@@ -171,7 +172,7 @@ export const getMeetings = async () => {
 export const addMeeting = async (data: {
     createdBy: string;
     title: string;
-    description: string;
+    description?: string;
     date: string;
     time: string;
     attendees: string[];
@@ -223,16 +224,31 @@ export const getTodayLeaveEmployee = async () => {
     return response.data
 }
 
-export const updateLeaves = async (id: string, data: {
+export const updateLeavesForAdmin = async (id: string, data: {
     leaveStatus: string
 }) => {
     const response = await axiosInstance.patch("/leaves", { id: id, ...data })
     return response.data
 }
 
+export const updateLeaves = async (id: string, data: {
+    date: Dayjs | null;
+    leaveType: string;
+    reason: string;
+}) => {
+    const response = await axiosInstance.patch("/leaves/employees", { id: id, ...data })
+    return response.data
+}
+
+export const deleteLeaves = async (id: any) => {
+    const response = await axiosInstance.delete("/leaves/employees", { data: { id } })
+    return response.data
+}
+
 export const addLeaves = async (data: {
-    date: Date;
+    date: Dayjs | null;
     leaveType: string
+    reason: string
 }) => {
     const response = await axiosInstance.post("/leaves/employees", data)
     return response.data
@@ -256,6 +272,13 @@ export const deleteHolidays = async (id: any) => {
     return response.data
 }
 
+export const updateHoliday = async (id: string, data: {
+    name: string;
+    date: Date
+}) => {
+    const response = await axiosInstance.patch("/holidays", { id: id, ...data })
+}
+
 export const bdayEmployee = async () => {
     const response = await axiosInstance.get("/upcoming-bday")
     return response.data
@@ -263,15 +286,15 @@ export const bdayEmployee = async () => {
 
 export const postAttendance = async (data: {
     inTime: string;
-    outTime: string
+    outTime: string;
 }) => {
     const response = await axiosInstance.post("/attendance", data)
     return response.data
 }
 
 export const updateAttendance = async (id: string, data: {
-    inTime: string
-    outTime: string
+    inTime: string;
+    outTime: string;
 }) => {
     const response = await axiosInstance.patch("attendance", { id: id, ...data })
     return response.data
@@ -294,5 +317,33 @@ export const getAttendance = async () => {
 
 export const getWorksheetData = async (month: number, year: number) => {
     const response = await axiosInstance.get(`/worksheet?month=${month}&year=${year}`)
+    return response.data
+}
+
+export const getWorkPlans = async () => {
+    const response = await axiosInstance.get("/workplan")
+    return response.data
+}
+
+export const addWorkPlan = async (data: {
+    projectId: string;
+    title: string;
+    estimationHours: string;
+    status: string;
+    description?: string;
+    date: Date
+}) => {
+    const response = await axiosInstance.post("/workplan", data)
+    return response.data
+}
+
+export const addWorkPlanByIds = async (data: {
+    ids: {
+        id: string;
+        estimationHours: number;
+    }[];
+    date?: Date;
+}) => {
+    const response = await axiosInstance.post("/workplan/byIds", data)
     return response.data
 }

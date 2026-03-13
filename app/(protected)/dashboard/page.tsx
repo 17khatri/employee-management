@@ -11,6 +11,8 @@ import {
   getEmployees,
   getEmployeesProject,
   getEmployeesTask,
+  getWorkPlans,
+  editTask,
 } from "@/app/services/auth.service";
 import { RootState } from "@/app/store/store";
 import { useEffect, useState } from "react";
@@ -23,6 +25,14 @@ import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { Controller } from "react-hook-form";
 import dayjs from "dayjs";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import NumberField from "@/app/components/NumberField";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import { TASK_STATUS_VALUES } from "@/app/constants/task";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import FormHelperText from "@mui/material/FormHelperText";
 
 interface TodayLeave {
   _id: string;
@@ -63,6 +73,7 @@ interface FormValues {
 
 interface Task {
   _id: string;
+  taskId?: string;
   title: string;
   description: string;
   status: string;
@@ -80,6 +91,29 @@ interface Task {
     title: string;
   };
   isActive: boolean;
+  actualHours: number;
+  estimationHours: number;
+}
+
+interface Workplan {
+  _id: string;
+  taskId: {
+    _id: string;
+    title: string;
+    description: string;
+    status: string;
+    projectId: {
+      title: string;
+    };
+    estimationHours: number;
+    actualHours: number;
+  };
+  date: Date;
+}
+
+interface LogFormValues {
+  actualHours: number;
+  status: string;
 }
 
 export default function DashboardPage() {
@@ -90,18 +124,46 @@ export default function DashboardPage() {
   const [employeesProjects, setEmployeesProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [workplan, setWorkPlan] = useState<Workplan[]>([]);
+  const [logTask, setLogTask] = useState<Workplan | null>(null);
   const user = useSelector((state: RootState) => state?.auth.user);
   const {
-    handleSubmit,
-    control,
+    handleSubmit: handleAttendanceSubmit,
+    control: attendanceControl,
+    getValues,
     setValue,
-    formState: { errors },
+    formState: { errors: attendanceErrors },
   } = useForm<FormValues>({
     defaultValues: {
       inTime: "",
       outTime: "",
     },
   });
+
+  const {
+    handleSubmit: handleLogSubmitForm,
+    control: logControl,
+    reset: resetLogForm,
+    formState: { errors: logErrors },
+  } = useForm<LogFormValues>({
+    defaultValues: {
+      actualHours: 0,
+      status: "",
+    },
+  });
+
+  const fetchWorkPlans = async () => {
+    try {
+      const response = await getWorkPlans();
+      setWorkPlan(response);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchWorkPlans();
+  }, []);
 
   const fetchEmployeesonLeave = async () => {
     try {
@@ -151,7 +213,7 @@ export default function DashboardPage() {
     if (user?.role === "employee") {
       loadTodayAttendance();
     }
-  }, []);
+  }, [user]);
 
   const fetchEmployees = async () => {
     try {
@@ -214,6 +276,20 @@ export default function DashboardPage() {
     (task) => task.status !== "completed",
   ).length;
 
+  const totalTasks = workplan.length;
+
+  const inProgressTasks = workplan.filter(
+    (task) => task.taskId.status === "in-progress",
+  ).length;
+
+  const pendingTasks = workplan.filter(
+    (task) => task.taskId.status === "pending",
+  ).length;
+
+  const doneTasks = workplan.filter(
+    (task) => task.taskId.status === "completed",
+  ).length;
+
   const onSubmit = async (data: FormValues) => {
     try {
       if (!todayAttendance) {
@@ -230,15 +306,32 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLogSubmit = async (data: LogFormValues) => {
+    try {
+      const payload = {
+        actualHours: data.actualHours,
+        status: data.status,
+        workplan: true,
+      };
+      await editTask(logTask?.taskId._id, payload);
+      toast.success("Task updated successfully");
+      setLogTask(null);
+      fetchWorkPlans();
+    } catch (error) {
+      toast.error("Failed to update log");
+    }
+  };
+
   const totalHours = (() => {
     if (
       !todayAttendance &&
-      (!control._formValues?.inTime || !control._formValues?.outTime)
+      (!attendanceControl._formValues?.inTime ||
+        !attendanceControl._formValues?.outTime)
     )
       return null;
 
-    const inTime = control._formValues?.inTime;
-    const outTime = control._formValues?.outTime;
+    const inTime = attendanceControl._formValues?.inTime;
+    const outTime = attendanceControl._formValues?.outTime;
 
     if (!inTime || !outTime) return null;
 
@@ -252,6 +345,90 @@ export default function DashboardPage() {
 
     return `${hours}h ${minutes}m`;
   })();
+
+  const handleLog = (workplan: Workplan) => {
+    setLogTask(workplan);
+
+    resetLogForm({
+      actualHours: workplan.taskId.actualHours || 0,
+      status: workplan.taskId.status,
+    });
+  };
+
+  const columns: GridColDef<Workplan>[] = [
+    {
+      field: "title",
+      headerName: "Task Title",
+      flex: 1.5,
+      renderCell: (params) => {
+        return <p>{params.row.taskId.title}</p>;
+      },
+    },
+    {
+      field: "project",
+      headerName: "Project",
+      flex: 1,
+      valueGetter: (value, row) => `${row.taskId?.projectId?.title} `,
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+      renderCell: (params) => {
+        return <p>{params.row.taskId.status}</p>;
+      },
+    },
+    {
+      field: "estimationHours",
+      headerName: "EST. Hours",
+      flex: 1,
+      renderCell: (params) => {
+        return <p>{params.row.taskId.estimationHours}</p>;
+      },
+    },
+    {
+      field: "actualHours",
+      headerName: "Hours Logged",
+      flex: 1,
+      renderCell: (params) => {
+        const actual = params.row.taskId.actualHours;
+        const estimated = params.row.taskId.estimationHours;
+
+        return (
+          <span
+            className={
+              actual > estimated
+                ? "text-red-500 font-semibold"
+                : "text-gray-800"
+            }
+          >
+            {actual ?? 0}
+          </span>
+        );
+      },
+    },
+    {
+      field: "actions",
+      headerName: "Action",
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => {
+        const task = params.row;
+
+        return (
+          <div className="flex items-center">
+            <Button
+              onClick={() => handleLog(task)}
+              size="small"
+              variant="contained"
+            >
+              Log
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
@@ -272,7 +449,7 @@ export default function DashboardPage() {
             {user?.role === "employee" && (
               <form
                 className="w-[30%] flex flex-col gap-4 bg-white rounded-2xl p-8 shadow-xl"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={handleAttendanceSubmit(onSubmit)}
               >
                 <div className="flex items-center justify-between">
                   <p className="text-xl font-bold">Daily Attendace</p>
@@ -281,9 +458,10 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  {/* In Time */}
                   <Controller
                     name="inTime"
-                    control={control}
+                    control={attendanceControl}
                     rules={{ required: "In time is required" }}
                     render={({ field }) => (
                       <TimePicker
@@ -292,17 +470,35 @@ export default function DashboardPage() {
                         onChange={(newValue) =>
                           field.onChange(newValue?.toISOString())
                         }
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            error: !!attendanceErrors.inTime,
+                            helperText: attendanceErrors.inTime?.message,
+                          },
+                        }}
                       />
                     )}
                   />
-                  {errors.inTime && (
-                    <p className="text-red-500 text-sm">
-                      {errors.inTime.message}
-                    </p>
-                  )}
+
+                  {/* Out Time */}
                   <Controller
                     name="outTime"
-                    control={control}
+                    control={attendanceControl}
+                    rules={{
+                      validate: (value) => {
+                        const inTime = getValues("inTime");
+
+                        if (!inTime || !value) return true;
+
+                        const start = dayjs(inTime);
+                        const end = dayjs(value);
+
+                        return (
+                          end.isAfter(start) || "Out Time must be after In Time"
+                        );
+                      },
+                    }}
                     render={({ field }) => (
                       <TimePicker
                         label="Out Time"
@@ -310,20 +506,22 @@ export default function DashboardPage() {
                         onChange={(newValue) =>
                           field.onChange(newValue?.toISOString())
                         }
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            error: !!attendanceErrors.outTime,
+                            helperText: attendanceErrors.outTime?.message,
+                          },
+                        }}
                       />
                     )}
                   />
-                  {errors.outTime && (
-                    <p className="text-red-500 text-sm">
-                      {errors.outTime.message}
-                    </p>
-                  )}
                 </LocalizationProvider>
                 <Button variant="contained" className="w-full" type="submit">
                   {todayAttendance ? "Update Time" : "Enter Time"}
                 </Button>
-                {control._formValues?.inTime &&
-                  control._formValues?.outTime && (
+                {attendanceControl._formValues?.inTime &&
+                  attendanceControl._formValues?.outTime && (
                     <p className="text-sm font-semibold text-gray-700">
                       Total Hours: {totalHours}
                     </p>
@@ -331,6 +529,160 @@ export default function DashboardPage() {
               </form>
             )}
           </div>
+
+          {user?.role === "employee" && (
+            <div className="bg-white p-6 rounded-2xl shadow mt-4">
+              <h1 className="text-xl font-bold mb-4">My Work Plan</h1>
+
+              {/* Task Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-xl text-center">
+                  <p className="text-sm text-gray-500">Total Tasks</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {totalTasks}
+                  </p>
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded-xl text-center">
+                  <p className="text-sm text-gray-500">In Progress</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {inProgressTasks}
+                  </p>
+                </div>
+
+                <div className="bg-orange-50 p-4 rounded-xl text-center">
+                  <p className="text-sm text-gray-500">Pending</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {pendingTasks}
+                  </p>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-xl text-center">
+                  <p className="text-sm text-gray-500">Done</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {doneTasks}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 justify-end mb-4">
+                <p>Estimation Hours:</p>
+                <p>Hours Logged Today:</p>
+              </div>
+              <DataGrid
+                rows={workplan}
+                columns={columns}
+                getRowId={(row) => row._id}
+                disableRowSelectionOnClick
+              />
+            </div>
+          )}
+
+          {logTask && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
+                <div className="flex justify-between items-center mb-1">
+                  <h2 className="text-xl font-bold">Log Work</h2>
+                  <button
+                    onClick={() => setLogTask(null)}
+                    className="text-gray-400 hover:text-red-500 text-xl cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500">Task</p>
+                  <p className="font-semibold">{logTask?.taskId.title}</p>
+                </div>
+                <form
+                  onSubmit={handleLogSubmitForm(handleLogSubmit)}
+                  className="space-y-2 mt-4"
+                >
+                  <div>
+                    <Controller
+                      name="actualHours"
+                      control={logControl}
+                      rules={{
+                        required: "Actual Hours is required",
+                        min: {
+                          value: 1,
+                          message: "Logged hours is must be greater then one",
+                        },
+                      }}
+                      render={({ field, fieldState }) => (
+                        <NumberField
+                          label="Log Hours"
+                          size="small"
+                          min={0}
+                          step={0.01}
+                          onBlur={field.onBlur}
+                          value={field.value ?? null}
+                          onValueChange={(value) => field.onChange(value)}
+                          error={!!fieldState.error}
+                          helperText={fieldState.error?.message}
+                        />
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <FormControl
+                      fullWidth
+                      margin="dense"
+                      error={!!logErrors.status}
+                    >
+                      <InputLabel size="small" id="status-label">
+                        Status
+                      </InputLabel>
+                      <Controller
+                        name="status"
+                        control={logControl}
+                        rules={{ required: "Status is required" }}
+                        render={({ field }) => (
+                          <Select
+                            size="small"
+                            {...field}
+                            labelId="status-label"
+                            label="Status"
+                          >
+                            {TASK_STATUS_VALUES.map((status) => (
+                              <MenuItem key={status} value={status}>
+                                {status.charAt(0).toUpperCase() +
+                                  status.slice(1)}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {logErrors.status && (
+                        <FormHelperText>
+                          {logErrors.status.message}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      type="button"
+                      onClick={() => setLogTask(null)}
+                      className="px-5 py-2 rounded-xl border hover:bg-gray-100"
+                    >
+                      Cancel
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      type="submit"
+                      className="px-6 py-2 rounded-xl bg-indigo-600 
+                                           text-white font-semibold hover:bg-indigo-700 
+                                           shadow-md hover:shadow-lg transition"
+                    >
+                      {logTask ? "Update" : "Save Log"}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-8">

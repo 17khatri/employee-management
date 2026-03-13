@@ -10,6 +10,9 @@ import { motion } from "framer-motion";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import toast from "react-hot-toast";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function Home() {
   const {
@@ -25,8 +28,13 @@ export default function Home() {
 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const router = useRouter();
   const dispatch = useDispatch();
+
+  const handleTogglePassword = () => {
+    setShowPassword((prev) => !prev);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -108,9 +116,18 @@ export default function Home() {
               label="Password"
               variant="outlined"
               {...register("password", { required: "Password is required" })}
-              type="password"
+              type={showPassword ? "text" : "password"}
               className="w-full"
               placeholder="Enter your password"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleTogglePassword} edge="end">
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             {errors.password && (
               <p className="text-red-500 text-sm mt-1">

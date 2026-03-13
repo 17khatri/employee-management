@@ -14,6 +14,7 @@ import {
 import CastleIcon from "@mui/icons-material/Castle";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import ListAltIcon from "@mui/icons-material/ListAlt";
+import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 export default function Sidebar() {
@@ -50,13 +51,15 @@ export default function Sidebar() {
           </Link>
         )}
 
-        <Link
-          href="/departments"
-          className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/departments" ? "bg-gray-700" : ""}`}
-        >
-          <ApartmentIcon className="inline mr-3" />
-          Department
-        </Link>
+        {user?.role === "admin" && (
+          <Link
+            href="/departments"
+            className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/departments" ? "bg-gray-700" : ""}`}
+          >
+            <ApartmentIcon className="inline mr-3" />
+            Department
+          </Link>
+        )}
 
         <Link
           href="/projects"
@@ -115,6 +118,16 @@ export default function Sidebar() {
           >
             <ListAltIcon className="inline mr-3" />
             Worksheet
+          </Link>
+        )}
+
+        {user?.role === "employee" && (
+          <Link
+            href="/workplan"
+            className={`block hover:bg-gray-700 border-b border-gray-700 p-1 text-sm rounded ${pathname === "/workplan" ? "bg-gray-700" : ""}`}
+          >
+            <WorkspacesIcon className="inline mr-3" />
+            Work Plan
           </Link>
         )}
 

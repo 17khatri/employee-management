@@ -30,6 +30,8 @@ import {
 } from "../services/auth.service";
 import TextField from "@mui/material/TextField";
 import toast from "react-hot-toast";
+import LogOutPopup from "./LogOutPopup";
+import { useForm } from "react-hook-form";
 
 interface User {
   firstName: string;
@@ -69,6 +71,29 @@ export default function Header() {
   });
 
   const [passwordError, setPasswordError] = useState("");
+  const [openPopup, setOpen] = useState(false);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setOpen(false);
+  };
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      firstName: loggedInUser?.firstName,
+      lastName: loggedInUser?.lastName,
+      email: loggedInUser?.email,
+      phone: loggedInUser?.employee?.phone,
+      salary: loggedInUser?.employee?.salary,
+    },
+  });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,24 +104,24 @@ export default function Header() {
     }
   };
 
-  const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleImageRemove = () => {
+    setSelectedFile(null);
+    setPreviewImage(null);
+  };
 
+  const handleProfileUpdate = async (data: any) => {
     if (!loggedInUser) return;
 
     // ✅ ADMIN UPDATE (JSON)
     if (loggedInUser.role === "admin") {
-      const formData = new FormData(e.currentTarget);
-
       const payload = {
-        firstName: formData.get("firstName") as string,
-        lastName: formData.get("lastName") as string,
-        email: formData.get("email") as string,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
       };
 
       try {
         const updatedUser = await updateLoggedInUser(payload);
-        console.log(updatedUser, "updated user in header");
         // update redux
         dispatch(
           setAuth({
@@ -123,28 +148,44 @@ export default function Header() {
 
     // ✅ EMPLOYEE UPDATE (FormData with image)
     if (loggedInUser.role === "employee") {
-      const formData = new FormData(e.currentTarget);
+      const formData = new FormData();
+
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("email", data.email);
+      formData.append("phone", data.phone);
+      formData.append("salary", data.salary);
 
       if (selectedFile) {
-        formData.set("profilePhoto", selectedFile);
+        formData.append("profilePhoto", selectedFile);
+      } else {
+        formData.append("profilePhoto", "");
       }
 
-      const updatedUser = await updateEmployeeProfile(formData);
+      try {
+        const updatedUser = await updateEmployeeProfile(formData);
 
-      dispatch(
-        setAuth({
-          token: localStorage.getItem("token")!,
-          user: updatedUser,
-        }),
-      );
+        dispatch(
+          setAuth({
+            token: localStorage.getItem("token")!,
+            user: updatedUser,
+          }),
+        );
 
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
 
-      setLoggedInUser(updatedUser);
-      setSelectedFile(null);
-      handleCloseProfile();
+        setLoggedInUser(updatedUser);
+        getProfile();
+        setSelectedFile(null);
+        handleCloseProfile();
 
-      toast.success("Profile updated successfully");
+        toast.success("Profile updated successfully");
+      } catch (error: any) {
+        console.error(error);
+        toast.error(
+          error.response?.data?.message || "Failed to update profile",
+        );
+      }
     }
   };
 
@@ -297,7 +338,10 @@ export default function Header() {
             handleOpenProfile();
           }}
         >
-          <Avatar sx={{ mr: 1 }}>
+          <Avatar
+            src={loggedInUser?.employee?.profilePhoto}
+            sx={{ width: 80, height: 80 }}
+          >
             {user?.firstName?.charAt(0).toUpperCase()}
             {user?.lastName?.charAt(0).toUpperCase()}
           </Avatar>
@@ -315,7 +359,7 @@ export default function Header() {
           </ListItemIcon>
           Change Password
         </MenuItem>
-        <MenuItem onClick={handleLogout}>
+        <MenuItem onClick={handleOpen}>
           <ListItemIcon>
             <Logout fontSize="small" />
           </ListItemIcon>
@@ -331,7 +375,7 @@ export default function Header() {
         <DialogTitle>Update Profile</DialogTitle>
 
         <DialogContent dividers>
-          <form onSubmit={handleProfileUpdate}>
+          <form onSubmit={handleSubmit(handleProfileUpdate)}>
             <div className="flex items-center gap-4 mb-4">
               <Avatar
                 src={previewImage || loggedInUser?.employee?.profilePhoto}
@@ -341,16 +385,26 @@ export default function Header() {
                 {loggedInUser?.lastName?.charAt(0).toUpperCase()}
               </Avatar>
               {user?.role === "employee" && (
-                <Button variant="outlined" component="label">
-                  Change Photo
-                  <input
-                    type="file"
-                    name="profilePhoto"
-                    hidden
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </Button>
+                <>
+                  <Button variant="outlined" component="label">
+                    Change Photo
+                    <input
+                      type="file"
+                      name="profilePhoto"
+                      hidden
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </Button>
+                  <Button
+                    onClick={() => handleImageRemove()}
+                    variant="outlined"
+                    color="error"
+                    component="label"
+                  >
+                    Remove Photo
+                  </Button>
+                </>
               )}
             </div>
 
@@ -359,24 +413,45 @@ export default function Header() {
               fullWidth
               margin="normal"
               label="First Name"
-              name="firstName"
               defaultValue={loggedInUser?.firstName}
+              {...register("firstName", {
+                required: "First name is required",
+                minLength: {
+                  value: 2,
+                  message: "Minimum 2 characters required",
+                },
+              })}
+              error={!!errors.firstName}
+              helperText={errors.firstName?.message}
             />
 
             <TextField
               fullWidth
               margin="normal"
               label="Last Name"
-              name="lastName"
               defaultValue={loggedInUser?.lastName}
+              {...register("lastName", {
+                required: "Last name is required",
+              })}
+              error={!!errors.lastName}
+              helperText={errors.lastName?.message}
             />
 
             <TextField
               fullWidth
               margin="normal"
               label="Email"
-              name="email"
+              disabled
               defaultValue={loggedInUser?.email}
+              {...register("email", {
+                required: "Email is required",
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: "Invalid email address",
+                },
+              })}
+              error={!!errors.email}
+              helperText={errors.email?.message}
             />
 
             {/* 🔹 Employee Only Fields */}
@@ -386,17 +461,33 @@ export default function Header() {
                   fullWidth
                   margin="normal"
                   label="Phone"
-                  name="phone"
                   defaultValue={loggedInUser?.employee?.phone}
+                  {...register("phone", {
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: "Enter valid 10 digit phone number",
+                    },
+                  })}
+                  error={!!errors.phone}
+                  helperText={errors.phone?.message}
                 />
 
                 <TextField
                   fullWidth
                   margin="normal"
                   label="Salary"
-                  name="salary"
                   type="number"
                   defaultValue={loggedInUser?.employee?.salary}
+                  {...register("salary", {
+                    required: "Salary is required",
+                    min: {
+                      value: 1,
+                      message: "Salary must be greater than 0",
+                    },
+                  })}
+                  error={!!errors.salary}
+                  helperText={errors.salary?.message}
                 />
               </>
             )}
@@ -526,6 +617,11 @@ export default function Header() {
           </form>
         </DialogContent>
       </Dialog>
+      <LogOutPopup
+        open={openPopup}
+        handleLogout={handleLogout}
+        handleClose={handleClosePopup}
+      />
     </header>
   );
 }

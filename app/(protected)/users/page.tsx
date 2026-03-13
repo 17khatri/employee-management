@@ -11,14 +11,6 @@ import {
 } from "@/app/services/auth.service";
 import { ROLE_VALUES } from "@/app/constants/roles";
 import toast from "react-hot-toast";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getFilteredRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import Button from "@mui/material/Button";
@@ -37,6 +29,10 @@ import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
 import dayjs, { Dayjs } from "dayjs";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import Paper from "@mui/material/Paper";
 
 interface User {
   _id: string;
@@ -102,6 +98,8 @@ export default function UserPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const selectedRole = watch("role");
+  const user = useSelector((state: RootState) => state.auth?.user);
+
   const fetchUsers = async () => {
     try {
       const res = await getUsers();
@@ -215,60 +213,61 @@ export default function UserPage() {
     setShowModal(true);
   };
 
-  const columns = useMemo<ColumnDef<User>[]>(
-    () => [
-      {
-        header: "Name",
-        accessorFn: (row) => row.firstName,
-      },
-      {
-        header: "Email",
-        accessorFn: (row) => row.email,
-      },
-      {
-        header: "Active",
-        cell: ({ row }) => (row.original.isActive ? "Yes" : "No"),
-      },
-      {
-        header: "Action",
-        cell: ({ row }) => (
-          <div className="flex">
-            <IconButton
-              onClick={() => {
-                handleEdit(row.original);
-              }}
-            >
-              <EditIcon className="text-sm" />
-            </IconButton>
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
+  const columns: GridColDef<User>[] = [
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+      valueGetter: (value, row) =>
+        `${row.firstName || ""} ${row.lastName || ""}`,
+    },
+    {
+      field: "email",
+      headerName: "Email",
+      flex: 1,
+    },
+    {
+      field: "isActive",
+      headerName: "Active",
+      flex: 1,
+      renderCell: (params) => (params.row.isActive ? "Yes" : "No"),
+    },
+    {
+      field: "action",
+      headerName: "Action",
+      sortable: false,
+      flex: 1,
+      renderCell: (params) => (
+        <IconButton
+          disabled={user?.id === params.row._id}
+          onClick={() => handleEdit(params.row)}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+  ];
 
   const filteredUsers = useMemo(() => {
-    if (statusFilter === "all") return users;
+    let data = users;
 
-    return users.filter((user) =>
-      statusFilter === "active" ? user.isActive : !user.isActive,
-    );
-  }, [users, statusFilter]);
+    if (statusFilter !== "all") {
+      data = data.filter((u) =>
+        statusFilter === "active" ? u.isActive : !u.isActive,
+      );
+    }
 
-  const table = useReactTable({
-    data: filteredUsers,
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 5,
-      },
-    },
-  });
+    if (globalFilter) {
+      data = data.filter(
+        (u) =>
+          u.firstName.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          u.lastName.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          u.email.toLowerCase().includes(globalFilter.toLowerCase()),
+      );
+    }
+
+    return data;
+  }, [users, statusFilter, globalFilter]);
 
   return (
     <ProtectedRoute allowRoles={["admin"]}>
@@ -301,7 +300,7 @@ export default function UserPage() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
-                    label="First Name"
+                    label="First Name*"
                     variant="outlined"
                     {...register("firstName", {
                       required: "First Name is required",
@@ -316,7 +315,7 @@ export default function UserPage() {
                     }
                   />
                   <TextField
-                    label="Last Name"
+                    label="Last Name*"
                     variant="outlined"
                     {...register("lastName", {
                       required: "Lasr Name is required",
@@ -325,16 +324,14 @@ export default function UserPage() {
                     size="small"
                     placeholder="Enter last name"
                     className="w-full"
-                    error={!!errors.firstName}
-                    helperText={
-                      errors.firstName ? errors.firstName.message : ""
-                    }
+                    error={!!errors.lastName}
+                    helperText={errors.lastName ? errors.lastName.message : ""}
                   />
                 </div>
 
                 <div>
                   <TextField
-                    label="Email"
+                    label="Email*"
                     variant="outlined"
                     {...register("email", {
                       required: "Email is required",
@@ -343,7 +340,6 @@ export default function UserPage() {
                         message: "Invalid email address",
                       },
                     })}
-                    type="email"
                     size="small"
                     placeholder="Enter email"
                     className="w-full"
@@ -359,7 +355,7 @@ export default function UserPage() {
                     error={!!errors.role}
                   >
                     <InputLabel size="small" id="role-label">
-                      Role
+                      Role*
                     </InputLabel>
 
                     <Controller
@@ -399,7 +395,7 @@ export default function UserPage() {
                         error={!!errors.departmentId}
                       >
                         <InputLabel size="small" id="department-label">
-                          Department
+                          Department*
                         </InputLabel>
 
                         <Controller
@@ -441,7 +437,8 @@ export default function UserPage() {
                       render={({ field }) => (
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                           <DatePicker
-                            label="Select Birth date"
+                            label="Select Birth Date*"
+                            format="DD-MM-YYYY"
                             disableFuture
                             value={field.value ?? null}
                             onChange={(newValue) => field.onChange(newValue)}
@@ -463,7 +460,7 @@ export default function UserPage() {
                       rules={{ required: "Gender is required" }}
                       render={({ field }) => (
                         <FormControl error={!!errors.gender} margin="normal">
-                          <FormLabel>Gender</FormLabel>
+                          <FormLabel>Gender*</FormLabel>
                           <RadioGroup row {...field} value={field.value || ""}>
                             <FormControlLabel
                               value="male"
@@ -491,7 +488,7 @@ export default function UserPage() {
                     {/* Phone Field */}
                     <div>
                       <TextField
-                        label="Phone"
+                        label="Phone*"
                         fullWidth
                         {...register("phone", {
                           required: "Phone number is required",
@@ -508,12 +505,16 @@ export default function UserPage() {
 
                     {/* Salary Field */}
                     <TextField
-                      label="Salary"
+                      label="Salary*"
                       fullWidth
                       {...register("salary", {
                         required: "Salary is required",
                         pattern: {
                           value: /^\d+$/,
+                          message: "Invalid salary amount",
+                        },
+                        maxLength: {
+                          value: 7,
                           message: "Invalid salary amount",
                         },
                       })}
@@ -597,55 +598,18 @@ export default function UserPage() {
                 Add User
               </Button>
             </div>
-            <table className="min-w-full flex-1 mt-2 bg-white rounded-xl shadow">
-              <thead>
-                <tr className="bg-gray-100 text-left">
-                  <th className="p-3 text-xs">Name</th>
-                  <th className="p-3 text-xs">Email</th>
-                  <th className="p-3 text-xs">Active</th>
-                  <th className="p-3 text-xs">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="border-t">
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="p-3 text-xs">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="flex items-center gap-2 mt-4">
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Previous
-              </button>
-
-              <span className="text-xs">
-                Page
-                <strong>
-                  {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </strong>
-              </span>
-
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Next
-              </button>
-            </div>
+            <Paper sx={{ height: 450, width: "100%", mt: 2 }}>
+              <DataGrid
+                rows={filteredUsers}
+                columns={columns}
+                getRowId={(row) => row._id}
+                pageSizeOptions={[5, 10, 20]}
+                initialState={{
+                  pagination: { paginationModel: { page: 0, pageSize: 5 } },
+                }}
+                disableRowSelectionOnClick
+              />
+            </Paper>
           </div>
         )}
       </div>

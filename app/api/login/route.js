@@ -17,6 +17,15 @@ export async function POST(req) {
         { status: 401 },
       );
     }
+
+    const isUserActive = await User.findOne({ email, isActive: true });
+    if (!isUserActive) {
+      return NextResponse.json(
+        { message: "User is not active" },
+        { status: 401 },
+      );
+    }
+
     // 2. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {

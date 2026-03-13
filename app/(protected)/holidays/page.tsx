@@ -5,17 +5,10 @@ import {
   addHolidays,
   deleteHolidays,
   getHolidays,
+  updateHoliday,
 } from "@/app/services/auth.service";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +18,10 @@ import { Controller, useForm } from "react-hook-form";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import EditIcon from "@mui/icons-material/Edit";
+import dayjs, { Dayjs } from "dayjs";
+import DeletePopup from "@/app/components/DeletePopup";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 
 interface Holidays {
   _id: string;
@@ -32,23 +29,39 @@ interface Holidays {
   date: Date;
 }
 
+type HolidayForm = {
+  date: Dayjs | null;
+  name: string;
+};
+
 export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<Holidays[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState<Holidays | null>(null);
+  const [openPopup, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const {
     handleSubmit,
     reset,
     register,
     control,
     formState: { errors },
-  } = useForm({
+  } = useForm<HolidayForm>({
     defaultValues: {
       date: null,
       name: "",
     },
   });
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setOpen(false);
+  };
 
   const fetchHolidays = async () => {
     try {
@@ -65,52 +78,79 @@ export default function HolidaysPage() {
     fetchHolidays();
   }, []);
 
-  const handleDelete = async (id: any) => {
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
     try {
-      const response = await deleteHolidays(id);
+      const response = await deleteHolidays(deleteId);
       toast.success(response.message || "Holiday deleted successfully!");
       fetchHolidays();
     } catch (error) {
       console.log(error);
+    } finally {
+      setDeleteId(null);
+      handleClosePopup();
     }
   };
 
-  const columns = useMemo<ColumnDef<Holidays>[]>(
-    () => [
-      {
-        header: "Name",
-        accessorFn: (row) => row.name,
+  const columns: GridColDef<Holidays>[] = [
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+    },
+    {
+      field: "date",
+      headerName: "Date",
+      flex: 1,
+      renderCell: (params) => {
+        const date = params.row.date
+          ? new Date(params.row.date).toLocaleDateString()
+          : "";
+        return <p>{date}</p>;
       },
-      {
-        header: "Date",
-        cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
+    },
+    {
+      field: "day",
+      headerName: "Day",
+      flex: 1,
+      renderCell: (params) => {
+        const day = params.row.date
+          ? new Date(params.row.date).toLocaleDateString("en-US", {
+              weekday: "long",
+            })
+          : "";
+        return <p>{day}</p>;
       },
-      {
-        header: "Action",
-        cell: ({ row }) => (
+    },
+    {
+      field: "actions",
+      headerName: "Action",
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => {
+        const holiday = params.row;
+
+        return (
           <div className="flex">
+            <IconButton onClick={() => handleEdit(holiday)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+
             <IconButton
-              onClick={() => handleDelete(row.original._id)}
               color="error"
+              onClick={() => {
+                handleOpen();
+                setDeleteId(holiday._id);
+              }}
             >
-              <DeleteIcon className="text-sm" />
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </div>
-        ),
+        );
       },
-    ],
-    [],
-  );
-
-  const table = useReactTable({
-    data: holidays,
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  });
+    },
+  ];
 
   const handleModalOpen = () => {
     setShowModal(true);
@@ -118,20 +158,44 @@ export default function HolidaysPage() {
 
   const handleModalClose = () => {
     setShowModal(false);
-    reset();
+    setEditingHoliday(null);
+    reset({
+      date: null,
+      name: "",
+    });
+  };
+
+  const handleEdit = (holiday: Holidays) => {
+    setEditingHoliday(holiday);
+
+    reset({
+      date: holiday.date ? dayjs(holiday.date) : null,
+      name: holiday.name,
+    });
+
+    setShowModal(true);
   };
 
   const onSubmit = async (data: any) => {
     try {
       if (!data.date) return;
 
-      await addHolidays({
-        name: data.name,
-        date: data.date.toDate(), // 🔥 convert dayjs → JS Date
-      });
-
-      toast.success("Holiday added successfully!");
+      if (editingHoliday) {
+        await updateHoliday(editingHoliday._id, data);
+        toast.success("Holiday updated successfully");
+      } else {
+        await addHolidays({
+          name: data.name,
+          date: data.date.toDate(), // 🔥 convert dayjs → JS Date
+        });
+        toast.success("Holiday added successfully!");
+      }
       handleModalClose();
+      setEditingHoliday(null);
+      reset({
+        date: null,
+        name: "",
+      });
       fetchHolidays(); // refresh table
     } catch (error: any) {
       console.error(error);
@@ -166,69 +230,29 @@ export default function HolidaysPage() {
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
             />
-            <table className="min-w-full bg-white shadow rounded mt-2">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr className="text-sm" key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="p-3 text-left bg-gray-100 text-xs"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="border-t">
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="p-3 text-xs">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* 📄 Pagination */}
-            <div className="flex items-center gap-2 mt-4">
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Previous
-              </button>
-
-              <span className="text-xs">
-                Page
-                <strong>
-                  {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </strong>
-              </span>
-
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Next
-              </button>
+            <div style={{ height: 450, width: "100%", marginTop: "10px" }}>
+              <DataGrid
+                rows={holidays}
+                columns={columns}
+                getRowId={(row) => row._id}
+                pageSizeOptions={[5, 10, 20]}
+                initialState={{
+                  pagination: {
+                    paginationModel: { pageSize: 5 },
+                  },
+                }}
+                disableRowSelectionOnClick
+              />
             </div>
           </>
         )}
+
+        <DeletePopup
+          open={openPopup}
+          handleClose={handleClosePopup}
+          handleDelete={handleDelete}
+        />
+
         {showModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div
@@ -238,7 +262,9 @@ export default function HolidaysPage() {
             >
               {/* Header */}
               <div className="flex justify-between items-center mb-3">
-                <h2 className="text-xl font-bold text-gray-800">Add Holiday</h2>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {editingHoliday ? "Update Holiday" : "Add Holiday"}
+                </h2>
                 <button
                   onClick={handleModalClose}
                   className="text-gray-400 cursor-pointer hover:text-red-500 text-xl"
@@ -257,7 +283,7 @@ export default function HolidaysPage() {
                     })}
                     type="text"
                     className="w-full border p-2 rounded"
-                    label="Holiday Name"
+                    label="Holiday Name*"
                     error={!!errors.name}
                     helperText={errors.name ? errors.name.message : ""}
                   />
@@ -269,7 +295,8 @@ export default function HolidaysPage() {
                   render={({ field }) => (
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        label="Select date"
+                        label="Select date*"
+                        format="DD-MM-YYYY"
                         value={field.value ?? null}
                         onChange={(newValue) => field.onChange(newValue)}
                         slotProps={{

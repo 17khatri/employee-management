@@ -8,3 +8,4 @@ import "./Studies";
 import "./Leave";
 import "./Holiday";
 import "./Attendance";
+import "./WorkPlan";

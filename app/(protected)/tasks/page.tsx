@@ -29,14 +29,8 @@ import IconButton from "@mui/material/IconButton";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import NumberField from "@/app/components/NumberField";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import DeletePopup from "@/app/components/DeletePopup";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 
 interface Task {
   _id: string;
@@ -87,12 +81,21 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [logTask, setLogTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [viewTask, setViewTask] = useState<Task | null>(null);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [openPopup, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const user = useSelector((state: RootState) => state?.auth.user);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setOpen(false);
+  };
 
   const fetchTasks = async () => {
     try {
@@ -113,7 +116,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [user]);
 
   const fetchEmployees = async () => {
     try {
@@ -146,14 +149,20 @@ export default function TasksPage() {
     }
   }, [user]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!deleteId) {
+      return;
+    }
     try {
-      const result = await deleteTask(id);
+      const result = await deleteTask(deleteId);
       fetchTasks();
       toast.success(result.message || "Task deleted successfully!");
     } catch (error: any) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to delete task");
+    } finally {
+      setDeleteId(null);
+      handleClosePopup();
     }
   };
 
@@ -174,29 +183,6 @@ export default function TasksPage() {
 
   const handleView = (task: Task) => {
     setViewTask(task);
-  };
-
-  const handleLog = async (task: Task) => {
-    setLogTask(task);
-    reset({
-      status: task.status,
-    });
-  };
-
-  const handleLogSubmit = async (data: any) => {
-    try {
-      const payload = {
-        actualHours: data.actualHours,
-        status: data.status,
-      };
-      await editTask(logTask?._id, payload);
-      toast.success("Task updated successfully!");
-      fetchTasks();
-      setLogTask(null);
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to add task");
-    }
   };
 
   const onSubmit = async (data: any) => {
@@ -228,7 +214,6 @@ export default function TasksPage() {
   const handleModalOpen = () => {
     setEditingTask(null);
     setShowModal(true);
-    console.log("Modal opened for adding new task");
     reset({
       title: "",
       description: "",
@@ -252,109 +237,97 @@ export default function TasksPage() {
     setEditingTask(null);
   };
 
-  const columns = useMemo<ColumnDef<Task>[]>(() => {
-    const baseColumns: ColumnDef<Task>[] = [
-      {
-        header: "Task Title",
-        accessorFn: (row) => row.title,
-      },
-      {
-        header: "Project",
-        accessorFn: (row) => row.projectId?.title,
-      },
-      {
-        header: "Status",
-        accessorFn: (row) => row.status,
-      },
-      {
-        header: "EST. Hours",
-        accessorFn: (row) => row.estimationHours,
-      },
-      {
-        header: "Hours Logged",
-        cell: ({ row }) => {
-          const actual = row.original.actualHours;
-          const estimated = row.original.estimationHours;
+  const columns: GridColDef<Task>[] = [
+    ...(user?.role === "admin"
+      ? [
+          {
+            field: "assignedTo",
+            headerName: "Assigned To",
+            flex: 1,
+            valueGetter: (value, row) =>
+              `${row.assignedTo.userId.firstName || ""} ${row.assignedTo.userId.lastName || ""} `,
+          },
+        ]
+      : []),
 
-          return (
-            <span
-              className={
-                actual > estimated
-                  ? "text-red-500 font-semibold"
-                  : "text-gray-800"
-              }
-            >
-              {actual ?? 0}
-            </span>
-          );
-        },
+    {
+      field: "title",
+      headerName: "Task Title",
+      flex: 1,
+    },
+    {
+      field: "project",
+      headerName: "Project",
+      flex: 1,
+      valueGetter: (value, row) => `${row.projectId.title} `,
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+    },
+    {
+      field: "estimationHours",
+      headerName: "EST. Hours",
+      flex: 1,
+    },
+    {
+      field: "actualHours",
+      headerName: "Hours Logged",
+      flex: 1,
+      renderCell: (params) => {
+        const actual = params.row.actualHours;
+        const estimated = params.row.estimationHours;
+
+        return (
+          <span
+            className={
+              actual > estimated
+                ? "text-red-500 font-semibold"
+                : "text-gray-800"
+            }
+          >
+            {actual ?? 0}
+          </span>
+        );
       },
-      {
-        header: "Action",
-        cell: ({ row }) => (
+    },
+    {
+      field: "actions",
+      headerName: "Action",
+      flex: 1.5,
+      sortable: false,
+      renderCell: (params) => {
+        const task = params.row;
+
+        return (
           <div className="flex items-center">
-            {user?.role === "employee" && (
-              <Button
-                onClick={() => handleLog(row.original)}
-                sx={{ height: "20px" }}
-                variant="contained"
-                size="small"
-              >
-                Log
-              </Button>
-            )}
-
-            <IconButton
-              color="primary"
-              onClick={() => handleView(row.original)}
-            >
-              <VisibilityIcon className="text-sm" />
+            <IconButton onClick={() => handleView(task)}>
+              <VisibilityIcon fontSize="small" />
             </IconButton>
 
             {user?.role === "employee" && (
               <>
-                <IconButton onClick={() => handleEdit(row.original)}>
-                  <EditIcon className="text-sm" />
+                <IconButton onClick={() => handleEdit(task)}>
+                  <EditIcon fontSize="small" />
                 </IconButton>
 
                 <IconButton
                   color="error"
-                  onClick={() => handleDelete(row.original._id)}
+                  onClick={() => {
+                    handleOpen();
+                    setDeleteId(task._id);
+                  }}
                 >
-                  <DeleteIcon className="text-sm" />
+                  <DeleteIcon fontSize="small" />
                 </IconButton>
               </>
             )}
           </div>
-        ),
-      },
-    ];
-
-    if (user?.role === "admin") {
-      baseColumns.unshift({
-        header: "Assigned To",
-        accessorFn: (row) =>
-          `${row.assignedTo?.userId?.firstName} ${row.assignedTo?.userId?.lastName}`,
-      });
-    }
-
-    return baseColumns;
-  }, [user]);
-
-  const table = useReactTable({
-    data: tasks,
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 5,
+        );
       },
     },
-  });
+  ];
 
   const totalTasks = tasks.length;
 
@@ -373,99 +346,11 @@ export default function TasksPage() {
           <h1 className="text-Sxl font-bold">Tasks</h1>
         </div>
 
-        {logTask && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
-              <div className="flex justify-between items-center mb-1">
-                <h2 className="text-xl font-bold">Log Work</h2>
-                <button
-                  onClick={() => setLogTask(null)}
-                  className="text-gray-400 hover:text-red-500 text-xl cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm text-gray-500">Task</p>
-                <p className="font-semibold">{logTask?.title}</p>
-              </div>
-              <form
-                onSubmit={handleSubmit(handleLogSubmit)}
-                className="space-y-2 mt-4"
-              >
-                <div>
-                  <Controller
-                    name="actualHours"
-                    control={control}
-                    rules={{ required: "Actual Hours is required" }}
-                    render={({ field, fieldState }) => (
-                      <NumberField
-                        label="Log Hours"
-                        size="small"
-                        min={0}
-                        step={0.01}
-                        onBlur={field.onBlur}
-                        value={field.value ?? null}
-                        onValueChange={(value) => field.onChange(value)}
-                        error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
-                      />
-                    )}
-                  />
-                </div>
-                <div>
-                  <FormControl fullWidth margin="dense" error={!!errors.status}>
-                    <InputLabel size="small" id="status-label">
-                      Status
-                    </InputLabel>
-                    <Controller
-                      name="status"
-                      control={control}
-                      rules={{ required: "Status is required" }}
-                      render={({ field }) => (
-                        <Select
-                          size="small"
-                          {...field}
-                          labelId="status-label"
-                          label="Status"
-                        >
-                          {TASK_STATUS_VALUES.map((status) => (
-                            <MenuItem key={status} value={status}>
-                              {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-
-                    {errors.status && (
-                      <FormHelperText>{errors.status.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                </div>
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button
-                    type="button"
-                    onClick={() => setLogTask(null)}
-                    className="px-5 py-2 rounded-xl border hover:bg-gray-100"
-                  >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    variant="contained"
-                    type="submit"
-                    className="px-6 py-2 rounded-xl bg-indigo-600 
-                                 text-white font-semibold hover:bg-indigo-700 
-                                 shadow-md hover:shadow-lg transition"
-                  >
-                    {logTask ? "Update" : "Save Log"}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <DeletePopup
+          open={openPopup}
+          handleClose={handleClosePopup}
+          handleDelete={handleDelete}
+        />
 
         {viewTask && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -532,7 +417,7 @@ export default function TasksPage() {
                     size="small"
                     {...register("title", { required: "Title is required" })}
                     type="text"
-                    label="Enter task title"
+                    label="Enter task title*"
                     placeholder="Enter task title"
                     className="w-full"
                     helperText={errors.title ? errors.title.message : ""}
@@ -543,15 +428,11 @@ export default function TasksPage() {
                 <div>
                   <TextField
                     size="small"
-                    {...register("description", {
-                      required: "Description is required",
-                    })}
                     label="Enter description"
                     placeholder="Enter description"
                     className="w-full"
-                    helperText={
-                      errors.description ? errors.description.message : ""
-                    }
+                    {...register("description")}
+                    helperText={errors.description?.message}
                     error={!!errors.description}
                   />
                 </div>
@@ -563,7 +444,7 @@ export default function TasksPage() {
                     error={!!errors.projectId}
                   >
                     <InputLabel size="small" id="project-label">
-                      Project
+                      Project*
                     </InputLabel>
                     <Controller
                       name="projectId._id"
@@ -577,11 +458,7 @@ export default function TasksPage() {
                           label="Project"
                         >
                           {projects.map((project) => (
-                            <MenuItem
-                              key={project._id}
-                              value={project._id}
-                              disabled={project._id === "manager"}
-                            >
+                            <MenuItem key={project._id} value={project._id}>
                               {project.title}
                             </MenuItem>
                           ))}
@@ -600,7 +477,7 @@ export default function TasksPage() {
                 <div>
                   <FormControl fullWidth margin="dense" error={!!errors.status}>
                     <InputLabel size="small" id="status-label">
-                      Status
+                      Status*
                     </InputLabel>
                     <Controller
                       name="status"
@@ -632,10 +509,16 @@ export default function TasksPage() {
                   <Controller
                     name="estimationHours"
                     control={control}
-                    rules={{ required: "Estimation Hours is required" }}
+                    rules={{
+                      required: "Estimation Hours is required",
+                      min: {
+                        value: 1,
+                        message: "Estimation hours must be grater then one",
+                      },
+                    }}
                     render={({ field, fieldState }) => (
                       <NumberField
-                        label="Estimation Hours"
+                        label="Estimation Hours*"
                         size="small"
                         min={0}
                         step={0.01}
@@ -726,69 +609,19 @@ export default function TasksPage() {
                 </h2>
               </div>
             </div>
-            <table className="min-w-full mt-2 bg-white shadow rounded table-fixed">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr className="text-sm" key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="p-3 text-left bg-gray-100 text-xs"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="border-t h-12">
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-3 text-xs h-12 align-middle"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* 📄 Pagination */}
-            <div className="flex items-center gap-2 mt-4">
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Previous
-              </button>
-
-              <span className="text-xs">
-                Page
-                <strong>
-                  {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </strong>
-              </span>
-
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Next
-              </button>
+            <div style={{ height: 450, width: "100%", marginTop: "10px" }}>
+              <DataGrid
+                rows={tasks}
+                columns={columns}
+                getRowId={(row) => row._id}
+                pageSizeOptions={[5, 10, 20]}
+                initialState={{
+                  pagination: {
+                    paginationModel: { pageSize: 5 },
+                  },
+                }}
+                disableRowSelectionOnClick
+              />
             </div>
           </>
         )}

@@ -33,10 +33,26 @@ export async function PATCH(req) {
     const file = formData.get("profilePhoto");
 
     let imageUrl;
+    let removePhoto = file === "";
+    const existingEmployee = await Employee.findOne({ userId });
+
+    // ✅ REMOVE PHOTO
+    if (removePhoto && existingEmployee?.profilePhoto) {
+      const oldImagePath = path.join(
+        process.cwd(),
+        "public",
+        existingEmployee.profilePhoto,
+      );
+
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+
+      imageUrl = ""; // remove from DB
+    }
 
     if (file && typeof file !== "string" && file.name && file.size > 0) {
       // 1️⃣ Get existing employee first
-      const existingEmployee = await Employee.findOne({ userId });
 
       // 2️⃣ Delete old profile photo if exists
       if (existingEmployee?.profilePhoto) {
@@ -88,7 +104,7 @@ export async function PATCH(req) {
       birthDate,
       gender,
     };
-    if (imageUrl) {
+    if (imageUrl !== undefined) {
       updateEmployeeData.profilePhoto = imageUrl;
     }
     const updatedEmployeeDetails = await Employee.findOneAndUpdate(

@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Task from "@/models/Task";
 import Employee from "@/models/Employee";
+import WorkPlan from "@/models/WorkPlan";
 import { verifyUser } from "@/lib/authMiddleware";
 
 // GET all tasks
@@ -48,9 +49,9 @@ export async function POST(req) {
     const { title, description, status, projectId, estimationHours } =
       await req.json();
 
-    if (!title) {
+    if (!title || !status || !projectId || !estimationHours) {
       return NextResponse.json(
-        { message: "Title is required" },
+        { message: "title, status, project and estimationHours are required" },
         { status: 400 },
       );
     }
@@ -128,7 +129,6 @@ export async function PATCH(req) {
       { status: 401 },
     );
   }
-  const userId = auth.user.id;
 
   try {
     await connectDB();
@@ -143,17 +143,7 @@ export async function PATCH(req) {
       estimationHours,
       actualHours,
     } = await req.json();
-    const employee = await Employee.findOne({ userId });
-    const task = await Task.findOne({ _id: id });
 
-    if (task.assignedTo.toString() !== employee._id.toString()) {
-      return NextResponse.json(
-        {
-          message: "You can update your own task only",
-        },
-        { status: 401 },
-      );
-    }
     const updatedTask = await Task.findByIdAndUpdate(
       id,
       {
@@ -163,7 +153,7 @@ export async function PATCH(req) {
         assignedTo,
         projectId,
         estimationHours,
-        actualHours,
+        $inc: { actualHours: actualHours || 0 },
       },
       { new: true },
     );
@@ -171,6 +161,7 @@ export async function PATCH(req) {
     if (!updatedTask) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
     }
+
     return NextResponse.json(updatedTask, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -66,15 +66,9 @@ export async function POST(req) {
       gender,
     } = await req.json();
 
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      isActive === undefined ||
-      role === undefined
-    ) {
+    if (!firstName || !lastName || !email || role === undefined) {
       return NextResponse.json(
-        { message: "Name, email, isActive and role are required" },
+        { message: "firstName, lastName, email and role are required" },
         { status: 400 },
       );
     }
@@ -101,6 +95,16 @@ export async function POST(req) {
     });
 
     if (role === ROLES.EMPLOYEE) {
+      if (!phone || !departmentId || !salary || !birthDate || !gender) {
+        return NextResponse.json(
+          {
+            message:
+              "phone, departmentId, salary, birthDate and gender are required",
+          },
+          { status: 400 },
+        );
+      }
+
       await Employee.create({
         userId: user._id,
         phone,
@@ -228,6 +232,7 @@ export async function PATCH(req) {
           firstName,
           lastName,
           email,
+          isActive,
         },
         { new: true },
       );

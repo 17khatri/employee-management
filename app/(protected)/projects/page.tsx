@@ -7,16 +7,9 @@ import {
   deleteProject,
   editProject,
   getEmployees,
+  getEmployeesProject,
   getProjects,
 } from "@/app/services/auth.service";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getFilteredRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import toast from "react-hot-toast";
 import { Controller, useForm } from "react-hook-form";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -29,15 +22,15 @@ import IconButton from "@mui/material/IconButton";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import FormHelperText from "@mui/material/FormHelperText";
-import MenuItem from "@mui/material/MenuItem";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { PickerValue } from "@mui/x-date-pickers/internals";
-
+import Autocomplete from "@mui/material/Autocomplete";
+import dayjs from "dayjs";
+import DeletePopup from "@/app/components/DeletePopup";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import Paper from "@mui/material/Paper";
 interface Task {
   _id: string;
   title: string;
@@ -99,12 +92,29 @@ export default function ProjectsPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [openPopup, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const user = useSelector((state: RootState) => state.auth.user);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setOpen(false);
+  };
 
   const fetchProjects = async () => {
     try {
-      const result = await getProjects();
-      setProjects(result);
+      if (user?.role === "employee") {
+        const result = await getEmployeesProject();
+        setProjects(result);
+      }
+      if (user?.role === "admin") {
+        const result = await getProjects();
+        setProjects(result);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -114,7 +124,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [user]);
 
   const fetchEmployees = async () => {
     try {
@@ -131,14 +141,20 @@ export default function ProjectsPage() {
     fetchEmployees();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!deleteId) {
+      return;
+    }
     try {
-      const result = await deleteProject(id);
+      const result = await deleteProject(deleteId);
       fetchProjects();
       toast.success(result.message || "Project deleted successfully!");
     } catch (error: any) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to delete project");
+    } finally {
+      setDeleteId(null);
+      handleClosePopup();
     }
   };
 
@@ -148,6 +164,9 @@ export default function ProjectsPage() {
     reset({
       title: project.title,
       description: project.description,
+      startDate: project.startDate,
+      endDate: project.endDate,
+      assignedTo: project.assignedTo,
     });
 
     setShowModal(true);
@@ -157,102 +176,69 @@ export default function ProjectsPage() {
     setViewProject(project);
   };
 
-  const columns = useMemo<ColumnDef<Project>[]>(
-    () => [
-      {
-        header: "Title",
-        accessorFn: (row) => row.title,
-      },
-      {
-        header: "Description",
-        accessorFn: (row) => row.description,
-      },
-      {
-        header: "Action",
-        cell: ({ row }) => (
-          <div className="flex">
-            <IconButton
-              color="primary"
-              onClick={() => {
-                handleView(row.original);
-              }}
-            >
-              <VisibilityIcon className="text-sm" />
-            </IconButton>
-            {user?.role === "admin" && (
-              <div>
-                <IconButton
-                  onClick={() => {
-                    handleEdit(row.original);
-                  }}
-                >
-                  <EditIcon className="text-sm" />
-                </IconButton>
-                <IconButton
-                  color="error"
-                  onClick={() => {
-                    handleDelete(row.original._id);
-                  }}
-                >
-                  <DeleteIcon className="text-sm" />
-                </IconButton>
-              </div>
-            )}
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
-
-  const taskColumns = useMemo<ColumnDef<Task>[]>(
-    () => [
-      {
-        header: "Title",
-        accessorKey: "title",
-      },
-      {
-        header: "Description",
-        accessorKey: "description",
-      },
-      {
-        id: "assignedTo",
-        header: "Assigned To",
-        accessorFn: (row) =>
-          row.assignedTo?.userId
-            ? `${row.assignedTo.userId.firstName} ${row.assignedTo.userId.lastName}`
-            : "Unassigned",
-      },
-    ],
-    [],
-  );
-
-  const table = useReactTable({
-    data: projects,
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 5,
-      },
+  const columns: GridColDef<Project>[] = [
+    {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
     },
-  });
-
-  const taskTable = useReactTable({
-    data: viewProject?.tasks || [],
-    columns: taskColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 3,
-      },
+    {
+      field: "description",
+      headerName: "Description",
+      flex: 1,
     },
-  });
+    {
+      field: "actions",
+      headerName: "Actions",
+      sortable: false,
+      flex: 1,
+      renderCell: (params) => (
+        <div className="flex">
+          <IconButton color="primary" onClick={() => handleView(params.row)}>
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+
+          {user?.role === "admin" && (
+            <>
+              <IconButton onClick={() => handleEdit(params.row)}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+
+              <IconButton
+                color="error"
+                onClick={() => {
+                  setDeleteId(params.row._id);
+                  handleOpen();
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const taskColumns: GridColDef<Task>[] = [
+    {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
+    },
+    {
+      field: "description",
+      headerName: "Description",
+      flex: 1,
+    },
+    {
+      field: "assignedTo",
+      headerName: "Assigned To",
+      flex: 1,
+      valueGetter: (value, row) =>
+        `${row.assignedTo.userId.firstName || ""} ${row.assignedTo.userId.firstName || ""}`,
+    },
+  ];
 
   const onSubmit = async (data: any) => {
     try {
@@ -291,6 +277,14 @@ export default function ProjectsPage() {
     setEditingProject(null);
   };
 
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) =>
+      `${p.title} ${p.description}`
+        .toLowerCase()
+        .includes(globalFilter.toLowerCase()),
+    );
+  }, [projects, globalFilter]);
+
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="p-4 flex flex-col h-full">
@@ -306,7 +300,7 @@ export default function ProjectsPage() {
                 <h2 className="text-xl font-bold">Project Details</h2>
                 <button
                   onClick={() => setViewProject(null)}
-                  className="text-gray-400 hover:text-red-500 text-xl"
+                  className="text-gray-400 hover:text-red-500 text-xl cursor-pointer"
                 >
                   ✕
                 </button>
@@ -330,67 +324,21 @@ export default function ProjectsPage() {
 
                 {viewProject.tasks && viewProject.tasks.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full flex-1 bg-white border rounded">
-                      <thead>
-                        {taskTable.getHeaderGroups().map((headerGroup) => (
-                          <tr key={headerGroup.id}>
-                            {headerGroup.headers.map((header) => (
-                              <th
-                                key={header.id}
-                                className="p-2 text-left text-xs bg-gray-100"
-                              >
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                              </th>
-                            ))}
-                          </tr>
-                        ))}
-                      </thead>
-
-                      <tbody>
-                        {taskTable.getRowModel().rows.map((row) => (
-                          <tr key={row.id} className="border-t">
-                            {row.getVisibleCells().map((cell) => (
-                              <td key={cell.id} className="p-2 text-xs">
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext(),
-                                )}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {/* Pagination */}
-                    <div className="flex items-center justify-between mt-3">
-                      <button
-                        onClick={() => taskTable.previousPage()}
-                        disabled={!taskTable.getCanPreviousPage()}
-                        className="px-3 py-1 text-xs border rounded"
-                      >
-                        Previous
-                      </button>
-
-                      <span className="text-xs">
-                        Page{" "}
-                        <strong>
-                          {taskTable.getState().pagination.pageIndex + 1} of{" "}
-                          {taskTable.getPageCount()}
-                        </strong>
-                      </span>
-
-                      <button
-                        onClick={() => taskTable.nextPage()}
-                        disabled={!taskTable.getCanNextPage()}
-                        className="px-3 py-1 text-xs border rounded"
-                      >
-                        Next
-                      </button>
-                    </div>
+                    <Paper sx={{ height: 250, width: "100%", mt: 1 }}>
+                      <DataGrid
+                        rows={viewProject.tasks}
+                        columns={taskColumns}
+                        getRowId={(row) => row._id}
+                        pageSizeOptions={[3, 5]}
+                        initialState={{
+                          pagination: {
+                            paginationModel: { page: 0, pageSize: 3 },
+                          },
+                        }}
+                        disableRowSelectionOnClick
+                        density="compact"
+                      />
+                    </Paper>
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">No tasks available.</p>
@@ -399,6 +347,12 @@ export default function ProjectsPage() {
             </div>
           </div>
         )}
+
+        <DeletePopup
+          open={openPopup}
+          handleClose={handleClosePopup}
+          handleDelete={handleDelete}
+        />
 
         {showModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -427,7 +381,7 @@ export default function ProjectsPage() {
                     size="small"
                     {...register("title", { required: "Title is required" })}
                     type="text"
-                    label="Enter task title"
+                    label="Enter task title*"
                     placeholder="Enter task title"
                     className="w-full"
                     error={!!errors.title}
@@ -438,9 +392,6 @@ export default function ProjectsPage() {
                 <div className="">
                   <TextField
                     size="small"
-                    {...register("description", {
-                      required: "Description is required",
-                    })}
                     label="Enter description"
                     placeholder="Enter description"
                     className="w-full"
@@ -459,47 +410,49 @@ export default function ProjectsPage() {
                     marginTop: "0",
                   }}
                 >
-                  <InputLabel size="small" id="attendees-label">
-                    assignedTo
-                  </InputLabel>
-
                   <Controller
                     name="assignedTo"
                     control={control}
-                    defaultValue={[]}
                     rules={{ required: "Select at least one attendee" }}
-                    render={({ field }) => (
-                      <Select
+                    render={({ field, fieldState }) => (
+                      <Autocomplete
                         multiple
-                        labelId="assignedTo-label"
-                        label="attendees"
-                        {...field}
                         size="small"
-                      >
-                        {employees
-                          .filter((u) => u._id !== user?.id)
-                          .map((u) => (
-                            <MenuItem key={u._id} value={u._id}>
-                              {u.userId?.firstName} {u.userId?.lastName}
-                            </MenuItem>
-                          ))}
-                      </Select>
+                        options={employees.filter((u) => u._id !== user?.id)}
+                        getOptionLabel={(option) =>
+                          `${option.userId?.firstName} ${option.userId?.lastName}`
+                        }
+                        value={
+                          employees.filter((emp) =>
+                            field.value?.includes(emp._id),
+                          ) || []
+                        }
+                        onChange={(_, newValue) =>
+                          field.onChange(newValue.map((emp) => emp._id))
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Assigned To*"
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                        )}
+                      />
                     )}
                   />
-
-                  <FormHelperText>{errors.assignedTo?.message}</FormHelperText>
                 </FormControl>
 
                 <Controller
                   name="startDate"
                   control={control}
-                  rules={{ required: "Date is required" }}
+                  rules={{ required: "Start date is required" }}
                   render={({ field }) => (
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        label="Select start date"
-                        disablePast
-                        value={field.value ?? null}
+                        label="Select start date*"
+                        format="DD-MM-YYYY"
+                        value={field.value ? dayjs(field.value) : null}
                         onChange={(newValue) => field.onChange(newValue)}
                         slotProps={{
                           textField: {
@@ -518,20 +471,20 @@ export default function ProjectsPage() {
                   <Controller
                     name="endDate"
                     control={control}
-                    rules={{ required: "Date is required" }}
+                    rules={{ required: "End date is required" }}
                     render={({ field }) => (
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
-                          label="Select end date"
-                          disablePast
-                          value={field.value ?? null}
+                          label="Select end date*"
+                          format="DD-MM-YYYY"
+                          value={field.value ? dayjs(field.value) : null}
                           onChange={(newValue) => field.onChange(newValue)}
                           slotProps={{
                             textField: {
                               size: "small",
                               fullWidth: true,
-                              error: !!errors.startDate,
-                              helperText: errors.startDate?.message,
+                              error: !!errors.endDate,
+                              helperText: errors.endDate?.message,
                             },
                           }}
                         />
@@ -590,70 +543,19 @@ export default function ProjectsPage() {
                 </Button>
               )}
             </div>
-            <table className="min-w-full mt-2 bg-white shadow rounded table-fixed">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr className="text-sm" key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="p-3 text-left bg-gray-100 text-xs"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="border-t h-12">
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-3 text-xs h-12 align-middle"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* 📄 Pagination */}
-            <div className="flex items-center gap-2 mt-4">
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Previous
-              </button>
-
-              <span className="text-xs">
-                Page
-                <strong>
-                  {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </strong>
-              </span>
-
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="px-3 text-xs py-1 border rounded"
-              >
-                Next
-              </button>
-            </div>
+            <Paper sx={{ height: 450, width: "100%", mt: 2 }}>
+              <DataGrid
+                rows={filteredProjects}
+                columns={columns}
+                getRowId={(row) => row._id}
+                pageSizeOptions={[5, 10, 20]}
+                initialState={{
+                  pagination: {
+                    paginationModel: { page: 0, pageSize: 5 },
+                  },
+                }}
+              />
+            </Paper>
           </>
         )}
       </div>

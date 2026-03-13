@@ -36,6 +36,7 @@ export default function WorksheetPage() {
   const [data, setData] = useState<WorksheetData[]>([]);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [importDate, setImportData] = useState<any[]>([]);
 
   const fetchWorksheetData = async () => {
     try {
@@ -127,7 +128,6 @@ export default function WorksheetPage() {
           Status: task.status,
           "Estimated Hours": task.estimationHours,
           "Actual Hours": task.actualHours ?? "",
-          "Created At": new Date(task.created_at).toLocaleString(),
         });
       });
     });
@@ -139,6 +139,26 @@ export default function WorksheetPage() {
 
     XLSX.writeFile(workbook, `worksheet-${month}-${year}.xlsx`);
   };
+
+  function handleDrop(e: any) {
+    var f = e.target.files[0];
+    /* f is a File */
+    var reader = new FileReader();
+    console.log("sngksni");
+    reader.onload = (e: any) => {
+      const binaryStr = e.target.result;
+
+      const workbook = XLSX.read(binaryStr, { type: "binary" });
+
+      const sheetName = workbook.SheetNames[0];
+
+      const sheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+      setImportData(jsonData);
+    };
+    reader.readAsBinaryString(f);
+  }
 
   return (
     <ProtectedRoute allowRoles={["employee"]}>
@@ -186,9 +206,21 @@ export default function WorksheetPage() {
               </Select>
             </FormControl>
           </div>
-          <Button onClick={exportToExcel} variant="contained" color="success">
-            Export to Excel
-          </Button>
+          <div className="flex gap-4">
+            {/* <Button variant="contained" color="success"> */}
+            <input
+              type="file"
+              name="profilePhoto"
+              // hidden
+              accept=".xlsx, .xls"
+              onChange={handleDrop}
+            />
+            {/* Import Excel file
+            </Button> */}
+            <Button onClick={exportToExcel} variant="contained" color="success">
+              Export to Excel
+            </Button>
+          </div>
         </div>
         {data.length === 0 ? (
           <div className="p-6 text-gray-500 text-sm">

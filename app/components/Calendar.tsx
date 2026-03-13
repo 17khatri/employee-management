@@ -23,6 +23,10 @@ import FormHelperText from "@mui/material/FormHelperText";
 import Select from "@mui/material/Select";
 import { RootState } from "../store/store";
 import { useSelector } from "react-redux";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import dayjs from "dayjs";
 
 export interface CalendarEvent {
   _id: string;
@@ -66,13 +70,13 @@ export default function Calendar() {
   const [users, setUsers] = useState<Users[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const user = useSelector((state: RootState) => state.auth.user);
-  console.log(user);
   const {
     register,
     handleSubmit,
     reset,
     control,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<MeetingFormData>({
     defaultValues: {
@@ -198,8 +202,8 @@ export default function Calendar() {
           const formattedEndTime = `${endHours}:${endMinutes}`;
           const formattedDate = clickedDate.toISOString().split("T")[0];
           setValue("date", formattedDate);
-          setValue("startTime", formattedStartTime);
-          setValue("endTime", formattedEndTime);
+          setValue("startTime", dayjs(clickedDate).toISOString());
+          setValue("endTime", dayjs(endDate).toISOString());
           setIsModalOpen(true);
         }}
         eventClick={(info) => {
@@ -266,7 +270,7 @@ export default function Calendar() {
                   {...register("title", { required: "Title is required" })}
                   type="text"
                   className="w-full border p-2 rounded"
-                  label="Title"
+                  label="Title*"
                   error={!!errors.title}
                   helperText={errors.title ? errors.title.message : ""}
                 />
@@ -275,9 +279,6 @@ export default function Calendar() {
               <div className="mb-3">
                 <TextField
                   size="small"
-                  {...register("description", {
-                    required: "Description is required",
-                  })}
                   type="text"
                   className="w-full border p-2 rounded"
                   label="Description"
@@ -295,7 +296,7 @@ export default function Calendar() {
                   error={!!errors.attendees}
                 >
                   <InputLabel size="small" id="attendees-label">
-                    Attendees
+                    Attendees*
                   </InputLabel>
 
                   <Controller
@@ -336,39 +337,76 @@ export default function Calendar() {
                   <p className="text-red-500 text-sm">{errors.date.message}</p>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="mb-3">
-                  <label className="block text-sm mb-1">Start Time</label>
-                  <input
-                    {...register("startTime", {
-                      required: "Start Time is required",
-                    })}
-                    type="time"
-                    className="w-full border p-2 rounded"
-                  />
-                  {errors.startTime && (
-                    <p className="text-red-500 text-sm">
-                      {errors.startTime.message}
-                    </p>
-                  )}
-                </div>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Start Time */}
+                  <div>
+                    <Controller
+                      name="startTime"
+                      control={control}
+                      rules={{
+                        required: "Start Time is required",
+                      }}
+                      render={({ field }) => (
+                        <TimePicker
+                          label="Start Time"
+                          value={field.value ? dayjs(field.value) : null}
+                          onChange={(newValue) =>
+                            field.onChange(newValue?.toISOString())
+                          }
+                          slotProps={{
+                            textField: {
+                              size: "small",
+                              fullWidth: true,
+                              error: !!errors.startTime,
+                              helperText: errors.startTime?.message,
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  </div>
 
-                <div className="mb-3">
-                  <label className="block text-sm mb-1">End Time</label>
-                  <input
-                    {...register("endTime", {
-                      required: "End Time is required",
-                    })}
-                    type="time"
-                    className="w-full border p-2 rounded"
-                  />
-                  {errors.endTime && (
-                    <p className="text-red-500 text-sm">
-                      {errors.endTime.message}
-                    </p>
-                  )}
+                  {/* End Time */}
+                  <div>
+                    <Controller
+                      name="endTime"
+                      control={control}
+                      rules={{
+                        required: "End Time is required",
+                        validate: (value) => {
+                          const start = dayjs(getValues("startTime"));
+                          const end = dayjs(value);
+
+                          if (!start || !end) return true;
+
+                          return (
+                            end.isAfter(start) ||
+                            "End time must be after start time"
+                          );
+                        },
+                      }}
+                      render={({ field }) => (
+                        <TimePicker
+                          label="End Time"
+                          value={field.value ? dayjs(field.value) : null}
+                          onChange={(newValue) =>
+                            field.onChange(newValue?.toISOString())
+                          }
+                          slotProps={{
+                            textField: {
+                              size: "small",
+                              fullWidth: true,
+                              error: !!errors.endTime,
+                              helperText: errors.endTime?.message,
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  </div>
                 </div>
-              </div>
+              </LocalizationProvider>
 
               <div className="flex justify-start gap-2 mt-4">
                 <button

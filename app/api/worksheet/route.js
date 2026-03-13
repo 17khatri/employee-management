@@ -73,3 +73,21 @@ export async function GET(req) {
     );
   }
 }
+
+export async function POST() {
+  const data = await req.json();
+
+  data.forEach((task) => {
+    Task.push({
+      id: Date.now(),
+      title: task.title,
+      description: task.description,
+      status: task.status,
+    });
+  });
+
+  return NextResponse.json({
+    message: "Tasks imported successfully",
+    count: data.length,
+  });
+}

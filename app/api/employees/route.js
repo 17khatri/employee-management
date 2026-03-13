@@ -36,8 +36,10 @@ export async function DELETE(req) {
         { status: 400 },
       );
     }
-
-    const deletedEmployee = await Employee.findByIdAndDelete(id);
+    const now = new Date();
+    const deletedEmployee = await Employee.findByIdAndUpdate(id, {
+      deletedAt: now,
+    });
 
     if (!deletedEmployee) {
       return NextResponse.json(

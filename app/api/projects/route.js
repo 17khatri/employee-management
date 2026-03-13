@@ -45,7 +45,7 @@ export async function POST(req) {
 
     if (!title || !assignedTo || !startDate || !endDate) {
       return NextResponse.json(
-        { message: "Title, assfnedTo, startDate and endDate are required" },
+        { message: "Title, assignedTo, startDate and endDate are required" },
         { status: 400 },
       );
     }

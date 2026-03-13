@@ -7,14 +7,14 @@ const StudySchema = new mongoose.Schema({
     required: true,
   },
   grade: {
-    type: String,
+    type: Number,
     required: true,
   },
   percentage: {
-    type: String,
+    type: Number,
   },
   passingYear: {
-    type: String,
+    type: Number,
     required: true,
   },
   deletedAt: {

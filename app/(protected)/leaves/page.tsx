@@ -1,19 +1,13 @@
 "use client";
 
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import { useEffect, useState, useMemo } from "react";
 import {
   addLeaves,
   getAdminLeaves,
-  updateLeaves,
+  updateLeavesForAdmin,
   getEmployeeLeaves,
+  deleteLeaves,
+  updateLeaves,
 } from "@/app/services/auth.service";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import TextField from "@mui/material/TextField";
@@ -31,36 +25,64 @@ import { LEAVE_TYPES_VALUES } from "@/app/constants/leave";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import IconButton from "@mui/material/IconButton";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import toast from "react-hot-toast";
+import dayjs, { Dayjs } from "dayjs";
+import DeletePopup from "@/app/components/DeletePopup";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import Paper from "@mui/material/Paper";
 
 interface Leaves {
   _id: string;
-  userId: {
+  userId?: {
     firstName: string;
     lastName: string;
     email: string;
   };
-  date: Date;
-  leaveType: string;
-  leaveStatus: string;
+  date?: Date;
+  leaveType?: string;
+  leaveStatus?: string;
+  reason?: string;
 }
+
+type LeaveForm = {
+  date: Dayjs | null;
+  leaveType: string;
+  reason: string;
+};
 
 export default function LeavesPage() {
   const [leave, setLeave] = useState<Leaves[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const user = useSelector((state: RootState) => state.auth.user);
+  const [editingLeave, setEditingLeave] = useState<Leaves | null>(null);
+  const [openPopup, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const user = useSelector((state: RootState) => state.auth?.user);
   const {
     handleSubmit,
     reset,
     control,
+    register,
     formState: { errors },
-  } = useForm({
+  } = useForm<LeaveForm>({
     defaultValues: {
       date: null,
       leaveType: "",
+      reason: "",
     },
   });
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setOpen(false);
+  };
 
   const handleModalOpen = () => {
     setShowModal(true);
@@ -68,7 +90,12 @@ export default function LeavesPage() {
 
   const handleModalClose = () => {
     setShowModal(false);
-    reset();
+    setEditingLeave(null);
+    reset({
+      date: null,
+      leaveType: "",
+      reason: "",
+    });
   };
 
   const fetchLeaves = async () => {
@@ -86,14 +113,14 @@ export default function LeavesPage() {
   };
   useEffect(() => {
     fetchLeaves();
-  }, []);
+  }, [user]);
 
   const handleUpdateStatus = async (
     id: string,
     status: "Approved" | "Rejected",
   ) => {
     try {
-      await updateLeaves(id, { leaveStatus: status });
+      await updateLeavesForAdmin(id, { leaveStatus: status });
 
       fetchLeaves();
     } catch (error) {
@@ -101,121 +128,195 @@ export default function LeavesPage() {
     }
   };
 
-  const onSubmit = async (data: any) => {
-    const payload = {
-      ...data,
-      date: data.date?.toISOString(),
-    };
+  const onSubmit = async (data: LeaveForm) => {
     try {
-      await addLeaves(payload);
-      console.log(payload);
+      if (editingLeave) {
+        await updateLeaves(editingLeave._id, data);
+        toast.success("Leaves updated successfully");
+      } else {
+        await addLeaves(data);
+        toast.success("Leave added successfully");
+      }
+
       setShowModal(false);
+      setEditingLeave(null);
+      reset({
+        date: null,
+        leaveType: "",
+        reason: "",
+      });
       fetchLeaves();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setShowModal(false);
+      toast.error(error.response?.data?.message);
     }
   };
 
-  const columns = useMemo<ColumnDef<Leaves>[]>(() => {
-    const baseColumns: ColumnDef<Leaves>[] = [
-      {
-        header: "Date",
-        cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
-      },
-      {
-        header: "Leave Type",
-        accessorFn: (row) => row.leaveType,
-      },
-      {
-        header: "Leave Status",
-        accessorFn: (row) => row.leaveStatus,
-      },
-    ];
+  const handleDelete = async () => {
+    if (!deleteId) {
+      return;
+    }
+    try {
+      const result = await deleteLeaves(deleteId);
+      fetchLeaves();
+      toast.success(result.message || "Task deleted successfully!");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to delete task");
+    } finally {
+      setDeleteId(null);
+      handleClosePopup();
+    }
+  };
 
-    // If admin → add Name at start
-    if (user?.role === "admin") {
-      baseColumns.unshift({
-        header: "Name",
-        accessorFn: (row) =>
-          `${row.userId?.firstName} ${row.userId?.lastName} `,
-      });
+  const handleEdit = (leave: Leaves) => {
+    setEditingLeave(leave);
 
-      baseColumns.push({
-        header: "Action",
-        cell: ({ row }) => {
-          const { _id, leaveStatus } = row.original;
+    reset({
+      date: leave.date ? dayjs(leave.date) : null,
+      leaveType: leave.leaveType,
+      reason: leave.reason,
+    });
 
+    setShowModal(true);
+  };
+
+  const columns: GridColDef<Leaves>[] = [
+    ...(user?.role === "admin"
+      ? [
+          {
+            field: "userId",
+            headerName: "Name",
+            flex: 1,
+            valueGetter: (value, row) =>
+              `${row.userId?.firstName || ""} ${row.userId?.lastName || ""}`,
+          },
+        ]
+      : []),
+
+    {
+      field: "date",
+      headerName: "Date",
+      flex: 1,
+      renderCell: (params) => {
+        const date = params.row.date
+          ? new Date(params.row.date).toLocaleDateString()
+          : "";
+        return <p>{date}</p>;
+      },
+    },
+
+    {
+      field: "leaveType",
+      headerName: "Leave Type",
+      flex: 1,
+    },
+
+    {
+      field: "leaveStatus",
+      headerName: "Leave Status",
+      flex: 1,
+    },
+
+    {
+      field: "reason",
+      headerName: "Reason",
+      flex: 1,
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      sortable: false,
+      flex: 1,
+      renderCell: (params) => {
+        const leave = params.row;
+
+        if (user?.role === "admin") {
           return (
-            <div className="flex">
-              {leaveStatus === "Pending" && (
+            <>
+              {leave.leaveStatus === "Pending" && (
                 <>
                   <Button
-                    variant="contained"
                     size="small"
-                    sx={{ margin: "0 8px" }}
-                    onClick={() => handleUpdateStatus(_id, "Approved")}
+                    onClick={() => handleUpdateStatus(leave._id, "Approved")}
                   >
                     Approve
                   </Button>
 
                   <Button
-                    variant="contained"
                     size="small"
                     color="error"
-                    onClick={() => handleUpdateStatus(_id, "Rejected")}
+                    onClick={() => handleUpdateStatus(leave._id, "Rejected")}
                   >
                     Reject
                   </Button>
                 </>
               )}
-
-              {leaveStatus === "Approved" && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="error"
-                  sx={{ margin: "0 8px" }}
-                  onClick={() => handleUpdateStatus(_id, "Rejected")}
-                >
-                  Reject
-                </Button>
+              {leave.leaveStatus === "Approved" && (
+                <>
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => handleUpdateStatus(leave._id, "Rejected")}
+                  >
+                    Reject
+                  </Button>
+                </>
               )}
-
-              {leaveStatus === "Rejected" && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{ margin: "0 8px" }}
-                  onClick={() => handleUpdateStatus(_id, "Approved")}
-                >
-                  Approve
-                </Button>
+              {leave.leaveStatus === "Rejected" && (
+                <>
+                  <Button
+                    size="small"
+                    onClick={() => handleUpdateStatus(leave._id, "Rejected")}
+                  >
+                    Approve
+                  </Button>
+                </>
               )}
-            </div>
+            </>
           );
-        },
-      });
+        }
+        if (user?.role === "employee") {
+          return (
+            <>
+              <IconButton onClick={() => handleEdit(leave)}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+
+              <IconButton
+                color="error"
+                onClick={() => {
+                  handleOpen();
+                  setDeleteId(leave._id);
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </>
+          );
+        }
+      },
+    },
+  ];
+
+  const filteredLeave = useMemo(() => {
+    let data = leave;
+
+    if (statusFilter !== "all") {
+      data = data.filter((l) => l.leaveStatus === statusFilter);
     }
 
-    return baseColumns;
-  }, [user]);
+    if (globalFilter) {
+      data = data.filter(
+        (l) =>
+          l.reason?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          l.leaveType?.toLowerCase().includes(globalFilter.toLowerCase()),
+      );
+    }
 
-  const filteredUsers = useMemo(() => {
-    if (statusFilter === "all") return leave;
+    return data;
+  }, [leave, statusFilter, globalFilter]);
 
-    return leave.filter((l) => l.leaveStatus === statusFilter);
-  }, [leave, statusFilter]);
-
-  const table = useReactTable({
-    data: filteredUsers,
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  });
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="p-4">
@@ -256,64 +357,25 @@ export default function LeavesPage() {
             </Select>
           </FormControl>
         </div>
-        <table className="min-w-full bg-white shadow rounded mt-2">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr className="text-sm" key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="p-3 text-left bg-gray-100 text-xs"
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
 
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-t">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-3 text-xs">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Paper sx={{ height: 450, width: "100%", mt: 2 }}>
+          <DataGrid
+            rows={filteredLeave}
+            columns={columns}
+            getRowId={(row) => row._id}
+            pageSizeOptions={[5, 10, 20]}
+            initialState={{
+              pagination: { paginationModel: { page: 0, pageSize: 5 } },
+            }}
+            disableRowSelectionOnClick
+          />
+        </Paper>
 
-        {/* 📄 Pagination */}
-        <div className="flex items-center gap-2 mt-4">
-          <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="px-3 text-xs py-1 border rounded"
-          >
-            Previous
-          </button>
-
-          <span className="text-xs">
-            Page
-            <strong>
-              {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </strong>
-          </span>
-
-          <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="px-3 text-xs py-1 border rounded"
-          >
-            Next
-          </button>
-        </div>
+        <DeletePopup
+          open={openPopup}
+          handleClose={handleClosePopup}
+          handleDelete={handleDelete}
+        />
 
         {showModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -337,68 +399,89 @@ export default function LeavesPage() {
 
               {/* Form */}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
-                <Controller
-                  name="date"
-                  control={control}
-                  rules={{ required: "Date is required" }}
-                  render={({ field }) => (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DatePicker
-                        label="Select date"
-                        disablePast
-                        value={field.value ?? null}
-                        onChange={(newValue) => field.onChange(newValue)}
-                        slotProps={{
-                          textField: {
-                            size: "small",
-                            fullWidth: true,
-                            error: !!errors.date,
-                            helperText: errors.date?.message,
-                          },
-                        }}
-                      />
-                    </LocalizationProvider>
-                  )}
-                />
-                <FormControl
-                  fullWidth
-                  margin="dense"
-                  error={!!errors.leaveType}
-                >
-                  <InputLabel size="small" id="leave-type-label">
-                    Leave Type
-                  </InputLabel>
-
+                <div className="my-1">
                   <Controller
-                    name="leaveType"
+                    name="date"
                     control={control}
-                    rules={{ required: "Leave Type is required" }}
+                    rules={{ required: "Date is required" }}
                     render={({ field }) => (
-                      <Select
-                        size="small"
-                        {...field}
-                        labelId="leave-type-label"
-                        label="Leave Type"
-                      >
-                        {LEAVE_TYPES_VALUES.map((leave) => (
-                          <MenuItem key={leave} value={leave}>
-                            {leave.charAt(0).toUpperCase() + leave.slice(1)}
-                          </MenuItem>
-                        ))}
-                      </Select>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          label="Select date*"
+                          disablePast
+                          format="DD-MM-YYYY"
+                          value={field.value ?? null}
+                          onChange={(newValue) => field.onChange(newValue)}
+                          slotProps={{
+                            textField: {
+                              size: "small",
+                              fullWidth: true,
+                              error: !!errors.date,
+                              helperText: errors.date?.message,
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
                     )}
                   />
-                  {errors.leaveType && (
-                    <FormHelperText>{errors.leaveType.message}</FormHelperText>
-                  )}
-                </FormControl>
+                </div>
+                <div className="my-1">
+                  <FormControl
+                    fullWidth
+                    margin="dense"
+                    error={!!errors.leaveType}
+                  >
+                    <InputLabel size="small" id="leave-type-label">
+                      Leave Type*
+                    </InputLabel>
+
+                    <Controller
+                      name="leaveType"
+                      control={control}
+                      rules={{ required: "Leave Type is required" }}
+                      render={({ field }) => (
+                        <Select
+                          size="small"
+                          {...field}
+                          labelId="leave-type-label"
+                          label="Leave Type"
+                        >
+                          {LEAVE_TYPES_VALUES.map((leave) => (
+                            <MenuItem key={leave} value={leave}>
+                              {leave.charAt(0).toUpperCase() + leave.slice(1)}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      )}
+                    />
+                    {errors.leaveType && (
+                      <FormHelperText>
+                        {errors.leaveType.message}
+                      </FormHelperText>
+                    )}
+                  </FormControl>
+                </div>
+                <div className="my-1">
+                  <TextField
+                    label="Reason*"
+                    variant="outlined"
+                    {...register("reason", {
+                      required: "reason is required",
+                    })}
+                    className="w-full"
+                    size="small"
+                    placeholder="Reason"
+                    error={!!errors.reason}
+                    helperText={errors.reason ? errors.reason.message : ""}
+                  />
+                </div>
                 <Button
                   sx={{ marginTop: "5px" }}
                   type="submit"
                   variant="contained"
                   size="small"
                 >
-                  Submit
+                  {editingLeave ? "Update Leave" : "Submit"}
                 </Button>
               </form>
             </div>

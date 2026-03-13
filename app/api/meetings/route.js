@@ -33,9 +33,12 @@ export async function POST(req) {
     const { title, description, date, startTime, endTime, attendees } =
       await req.json();
 
-    if (!title || !date || !startTime || !endTime) {
+    if (!title || !date || !startTime || !endTime || !attendees) {
       return NextResponse.json(
-        { message: "Title, date, start time, and end time are required" },
+        {
+          message:
+            "Title, date, start time, end time and attendees are required",
+        },
         { status: 400 },
       );
     }

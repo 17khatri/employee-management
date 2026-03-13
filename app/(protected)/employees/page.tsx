@@ -26,13 +26,14 @@ import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import NumberField from "@/app/components/NumberField";
 
 interface Employee {
   _id: string;
@@ -357,7 +358,7 @@ export default function EmployeesPage() {
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 relative
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-[700px] p-4 relative
                          animate-[fadeIn_.25s_ease]"
               onClick={(e) => e.stopPropagation()}
             >
@@ -379,23 +380,68 @@ export default function EmployeesPage() {
                     key={field.id}
                     className="grid grid-cols-4 gap-3 items-center mb-2"
                   >
-                    <TextField
-                      label="Grade"
-                      size="small"
-                      {...register(`education.${index}.grade`)}
-                    />
+                    <div>
+                      <Controller
+                        name={`education.${index}.grade`}
+                        control={control}
+                        rules={{ required: "Grade is required" }}
+                        render={({ field, fieldState }) => (
+                          <NumberField
+                            label="Grade"
+                            size="small"
+                            min={0}
+                            step={0.01}
+                            value={field.value ? Number(field.value) : null}
+                            onBlur={field.onBlur}
+                            onValueChange={(value) => field.onChange(value)}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                        )}
+                      />
+                    </div>
 
-                    <TextField
-                      label="Percentage"
-                      size="small"
-                      {...register(`education.${index}.percentage`)}
-                    />
+                    <div>
+                      <Controller
+                        name={`education.${index}.percentage`}
+                        control={control}
+                        rules={{ required: "Percentage is required" }}
+                        render={({ field, fieldState }) => (
+                          <NumberField
+                            label="Percentage"
+                            size="small"
+                            min={0}
+                            step={0.01}
+                            value={field.value ? Number(field.value) : null}
+                            onBlur={field.onBlur}
+                            onValueChange={(value) => field.onChange(value)}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                        )}
+                      />
+                    </div>
 
-                    <TextField
-                      label="Year"
-                      size="small"
-                      {...register(`education.${index}.passingYear`)}
-                    />
+                    <div>
+                      <Controller
+                        name={`education.${index}.passingYear`}
+                        control={control}
+                        rules={{ required: "Passing Year is required" }}
+                        render={({ field, fieldState }) => (
+                          <NumberField
+                            label="Passing Year"
+                            size="small"
+                            min={0}
+                            step={0.01}
+                            value={field.value ? Number(field.value) : null}
+                            onBlur={field.onBlur}
+                            onValueChange={(value) => field.onChange(value)}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                        )}
+                      />
+                    </div>
 
                     <div className="flex gap-1">
                       {/* Add Button (only show on last row) */}

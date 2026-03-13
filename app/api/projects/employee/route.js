@@ -20,13 +20,14 @@ export async function GET(req) {
       deletedAt: null,
     }).populate({
       path: "tasks",
+      match: { deletedAt: null },
       select: "title description assignedTo",
       populate: {
         path: "assignedTo",
         select: "userId",
         populate: {
           path: "userId",
-          select: "name email",
+          select: "firstName lastName email",
         },
       },
     });

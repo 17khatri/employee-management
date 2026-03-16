@@ -1,21 +1,26 @@
 "use client";
 
 import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { getWorksheetData } from "@/app/services/auth.service";
+import { getWorksheetData, uploadWorksheet } from "@/app/services/auth.service";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import * as XLSX from "xlsx";
-
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useEffect, useState } from "react";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Typography from "@mui/material/Typography";
+import { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
 
 interface Task {
   _id: string;
@@ -36,7 +41,9 @@ export default function WorksheetPage() {
   const [data, setData] = useState<WorksheetData[]>([]);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [importDate, setImportData] = useState<any[]>([]);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [modelOpen, setModelOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchWorksheetData = async () => {
     try {
@@ -144,7 +151,6 @@ export default function WorksheetPage() {
     var f = e.target.files[0];
     /* f is a File */
     var reader = new FileReader();
-    console.log("sngksni");
     reader.onload = (e: any) => {
       const binaryStr = e.target.result;
 
@@ -156,9 +162,23 @@ export default function WorksheetPage() {
 
       const jsonData = XLSX.utils.sheet_to_json(sheet);
       setImportData(jsonData);
+      setModelOpen(true);
     };
     reader.readAsBinaryString(f);
   }
+
+  const handleSaveImport = async () => {
+    try {
+      await uploadWorksheet(importData);
+      setModelOpen(false);
+      toast.success("Data imported.");
+      setImportData([]);
+      fetchWorksheetData();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to add task");
+    }
+  };
 
   return (
     <ProtectedRoute allowRoles={["employee"]}>
@@ -210,11 +230,19 @@ export default function WorksheetPage() {
             {/* <Button variant="contained" color="success"> */}
             <input
               type="file"
-              name="profilePhoto"
-              // hidden
+              ref={fileInputRef}
+              hidden
               accept=".xlsx, .xls"
               onChange={handleDrop}
             />
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import Excel
+            </Button>
             {/* Import Excel file
             </Button> */}
             <Button onClick={exportToExcel} variant="contained" color="success">
@@ -235,6 +263,33 @@ export default function WorksheetPage() {
           ))
         )}
       </div>
+      <Dialog open={modelOpen} onClose={() => setModelOpen(false)}>
+        <DialogTitle>Import Worksheet</DialogTitle>
+
+        <DialogContent>
+          <Typography>
+            Total rows found in Excel: <b>{importData.length}</b>
+          </Typography>
+
+          <Typography className="mt-2 text-sm text-gray-500">
+            Do you want to import these tasks?
+          </Typography>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setModelOpen(false)} color="error">
+            Cancel
+          </Button>
+
+          <Button
+            onClick={handleSaveImport}
+            variant="contained"
+            color="primary"
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ProtectedRoute>
   );
 }

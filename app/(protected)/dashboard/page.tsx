@@ -132,7 +132,10 @@ export default function DashboardPage() {
     control: attendanceControl,
     getValues,
     setValue,
-    formState: { errors: attendanceErrors },
+    formState: {
+      errors: attendanceErrors,
+      isSubmitting: isAttendanceSubmitting,
+    },
   } = useForm<FormValues>({
     defaultValues: {
       inTime: "",
@@ -144,7 +147,7 @@ export default function DashboardPage() {
     handleSubmit: handleLogSubmitForm,
     control: logControl,
     reset: resetLogForm,
-    formState: { errors: logErrors },
+    formState: { errors: logErrors, isSubmitting: isLogSubmitting },
   } = useForm<LogFormValues>({
     defaultValues: {
       actualHours: 0,
@@ -162,8 +165,10 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchWorkPlans();
-  }, []);
+    if (user?.role === "employee") {
+      fetchWorkPlans();
+    }
+  }, [user?.role]);
 
   const fetchEmployeesonLeave = async () => {
     try {
@@ -279,15 +284,15 @@ export default function DashboardPage() {
   const totalTasks = workplan.length;
 
   const inProgressTasks = workplan.filter(
-    (task) => task.taskId.status === "in-progress",
+    (task) => task?.taskId?.status === "in-progress",
   ).length;
 
   const pendingTasks = workplan.filter(
-    (task) => task.taskId.status === "pending",
+    (task) => task?.taskId?.status === "pending",
   ).length;
 
   const doneTasks = workplan.filter(
-    (task) => task.taskId.status === "completed",
+    (task) => task?.taskId?.status === "completed",
   ).length;
 
   const onSubmit = async (data: FormValues) => {
@@ -350,8 +355,8 @@ export default function DashboardPage() {
     setLogTask(workplan);
 
     resetLogForm({
-      actualHours: workplan.taskId.actualHours || 0,
-      status: workplan.taskId.status,
+      actualHours: workplan.taskId?.actualHours || 0,
+      status: workplan.taskId?.status,
     });
   };
 
@@ -361,7 +366,7 @@ export default function DashboardPage() {
       headerName: "Task Title",
       flex: 1.5,
       renderCell: (params) => {
-        return <p>{params.row.taskId.title}</p>;
+        return <p>{params.row.taskId?.title}</p>;
       },
     },
     {
@@ -375,7 +380,7 @@ export default function DashboardPage() {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        return <p>{params.row.taskId.status}</p>;
+        return <p>{params.row.taskId?.status}</p>;
       },
     },
     {
@@ -383,7 +388,7 @@ export default function DashboardPage() {
       headerName: "EST. Hours",
       flex: 1,
       renderCell: (params) => {
-        return <p>{params.row.taskId.estimationHours}</p>;
+        return <p>{params.row.taskId?.estimationHours}</p>;
       },
     },
     {
@@ -391,8 +396,8 @@ export default function DashboardPage() {
       headerName: "Hours Logged",
       flex: 1,
       renderCell: (params) => {
-        const actual = params.row.taskId.actualHours;
-        const estimated = params.row.taskId.estimationHours;
+        const actual = params.row.taskId?.actualHours;
+        const estimated = params.row.taskId?.estimationHours;
 
         return (
           <span
@@ -430,6 +435,14 @@ export default function DashboardPage() {
     },
   ];
 
+  const totalEstimationHours = workplan.reduce((total, item) => {
+    return total + (item.taskId?.estimationHours || 0);
+  }, 0);
+
+  const totalLoggedHours = workplan.reduce((total, item) => {
+    return total + (item.taskId?.actualHours || 0);
+  }, 0);
+
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
       <div className="min-h-screen w-full bg-gradient-to-br from-indigo-100 via-white to-blue-100 p-8">
@@ -442,7 +455,9 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-bold">Dashboard</h1>
               <p className="mt-2 text-lg opacity-90">
                 Welcome back,{" "}
-                <span className="capitalize font-semibold">{user?.role}</span>{" "}
+                <span className="capitalize font-semibold">
+                  {user?.firstName}
+                </span>{" "}
                 👋
               </p>
             </div>
@@ -517,7 +532,12 @@ export default function DashboardPage() {
                     )}
                   />
                 </LocalizationProvider>
-                <Button variant="contained" className="w-full" type="submit">
+                <Button
+                  variant="contained"
+                  disabled={isAttendanceSubmitting}
+                  className="w-full"
+                  type="submit"
+                >
                   {todayAttendance ? "Update Time" : "Enter Time"}
                 </Button>
                 {attendanceControl._formValues?.inTime &&
@@ -565,8 +585,8 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-4 justify-end mb-4">
-                <p>Estimation Hours:</p>
-                <p>Hours Logged Today:</p>
+                <p>Estimation Hours: {totalEstimationHours}</p>
+                <p>Hours Logged Today: {totalLoggedHours}</p>
               </div>
               <DataGrid
                 rows={workplan}
@@ -591,7 +611,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-4">
                   <p className="text-sm text-gray-500">Task</p>
-                  <p className="font-semibold">{logTask?.taskId.title}</p>
+                  <p className="font-semibold">{logTask?.taskId?.title}</p>
                 </div>
                 <form
                   onSubmit={handleLogSubmitForm(handleLogSubmit)}
@@ -671,6 +691,7 @@ export default function DashboardPage() {
 
                     <Button
                       variant="contained"
+                      disabled={isLogSubmitting}
                       type="submit"
                       className="px-6 py-2 rounded-xl bg-indigo-600 
                                            text-white font-semibold hover:bg-indigo-700 

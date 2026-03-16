@@ -47,7 +47,7 @@ export default function HolidaysPage() {
     reset,
     register,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<HolidayForm>({
     defaultValues: {
       date: null,
@@ -314,6 +314,7 @@ export default function HolidaysPage() {
                 <Button
                   sx={{ marginTop: "5px" }}
                   type="submit"
+                  disabled={isSubmitting}
                   variant="contained"
                   size="small"
                 >

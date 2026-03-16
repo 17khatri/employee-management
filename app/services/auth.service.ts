@@ -320,6 +320,11 @@ export const getWorksheetData = async (month: number, year: number) => {
     return response.data
 }
 
+export const uploadWorksheet = async (data: any[]) => {
+    const response = await axiosInstance.post("/worksheet", data)
+    return response.data
+}
+
 export const getWorkPlans = async () => {
     const response = await axiosInstance.get("/workplan")
     return response.data

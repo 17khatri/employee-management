@@ -76,7 +76,7 @@ export default function WorkPlanPage() {
     watch,
     reset,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<Task>({
     defaultValues: {
       title: "",
@@ -452,7 +452,12 @@ export default function WorkPlanPage() {
                 </label>
               )}
             />
-            <Button type="submit" variant="contained" sx={{ width: "300px" }}>
+            <Button
+              disabled={isSubmitting}
+              type="submit"
+              variant="contained"
+              sx={{ width: "300px" }}
+            >
               Create Task
             </Button>
           </form>

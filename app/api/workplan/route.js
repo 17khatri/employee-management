@@ -33,17 +33,22 @@ export async function GET(req) {
         $lte: todayEnd,
       },
       deletedAt: null,
-    }).populate({
-      path: "taskId",
-      match: {
-        assignedTo: employeeId,
-        deletedAt: null,
-      },
-      select: "title description status projectId estimationHours actualHours",
-      populate: { path: "projectId", select: "title" },
-    });
+    })
+      .populate({
+        path: "taskId",
+        match: {
+          assignedTo: employeeId,
+          deletedAt: null,
+        },
+        select:
+          "title description status projectId estimationHours actualHours",
+        populate: { path: "projectId", select: "title" },
+      })
+      .lean();
 
-    return NextResponse.json(workPlans, { status: 200 });
+    const filteredWorkPlans = workPlans.filter((wp) => wp.taskId !== null);
+
+    return NextResponse.json(filteredWorkPlans, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

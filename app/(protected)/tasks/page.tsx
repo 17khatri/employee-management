@@ -68,7 +68,7 @@ export default function TasksPage() {
     handleSubmit,
     reset,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<Task>({
     defaultValues: {
       title: "",
@@ -545,6 +545,7 @@ export default function TasksPage() {
                   <Button
                     variant="contained"
                     type="submit"
+                    disabled={isSubmitting}
                     className="px-6 py-2 rounded-xl bg-indigo-600 
                                  text-white font-semibold hover:bg-indigo-700 
                                  shadow-md hover:shadow-lg transition"

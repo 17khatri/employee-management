@@ -67,7 +67,7 @@ export default function LeavesPage() {
     reset,
     control,
     register,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LeaveForm>({
     defaultValues: {
       date: null,
@@ -477,6 +477,7 @@ export default function LeavesPage() {
                 </div>
                 <Button
                   sx={{ marginTop: "5px" }}
+                  disabled={isSubmitting}
                   type="submit"
                   variant="contained"
                   size="small"

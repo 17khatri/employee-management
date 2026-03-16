@@ -84,7 +84,7 @@ export default function Header() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
       firstName: loggedInUser?.firstName,
@@ -253,8 +253,7 @@ export default function Header() {
         currentPassword,
         newPassword,
       });
-
-      alert("Password changed successfully");
+      toast.success("Password changed successfully");
 
       setOpenChangePassword(false);
       setPasswordData({
@@ -494,7 +493,7 @@ export default function Header() {
 
             <DialogActions sx={{ mt: 2 }}>
               <Button onClick={handleCloseProfile}>Cancel</Button>
-              <Button type="submit" variant="contained">
+              <Button disabled={isSubmitting} type="submit" variant="contained">
                 Update
               </Button>
             </DialogActions>
@@ -610,7 +609,7 @@ export default function Header() {
               <Button onClick={() => setOpenChangePassword(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="contained">
+              <Button disabled={isSubmitting} type="submit" variant="contained">
                 Update Password
               </Button>
             </DialogActions>

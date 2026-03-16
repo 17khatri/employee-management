@@ -24,6 +24,7 @@ const TaskSchema = new mongoose.Schema(
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
+      required: true,
     },
     estimationHours: {
       type: Number,

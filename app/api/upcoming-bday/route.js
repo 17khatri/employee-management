@@ -14,12 +14,16 @@ export async function GET(req) {
     await connectDB();
 
     const currentMonth = new Date().getMonth() + 1;
+    const today = new Date().getDate();
 
     const employees = await Employee.aggregate([
       {
         $match: {
           $expr: {
-            $eq: [{ $month: "$birthDate" }, currentMonth],
+            $and: [
+              { $eq: [{ $month: "$birthDate" }, currentMonth] },
+              { $gte: [{ $dayOfMonth: "$birthDate" }, today] },
+            ],
           },
         },
       },

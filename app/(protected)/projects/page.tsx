@@ -75,7 +75,8 @@ export default function ProjectsPage() {
     handleSubmit,
     reset,
     control,
-    formState: { errors },
+    watch,
+    formState: { errors, isSubmitting },
   } = useForm<Project>({
     defaultValues: {
       title: "",
@@ -94,6 +95,7 @@ export default function ProjectsPage() {
   const [showModal, setShowModal] = useState(false);
   const [openPopup, setOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const startDate = watch("startDate");
 
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -394,6 +396,7 @@ export default function ProjectsPage() {
                     size="small"
                     label="Enter description"
                     placeholder="Enter description"
+                    {...register("description")}
                     className="w-full"
                     helperText={
                       errors.description ? errors.description.message : ""
@@ -471,7 +474,17 @@ export default function ProjectsPage() {
                   <Controller
                     name="endDate"
                     control={control}
-                    rules={{ required: "End date is required" }}
+                    rules={{
+                      required: "End date is required",
+                      validate: (value) => {
+                        if (!value || !startDate) return true;
+                        return (
+                          dayjs(value).isSame(startDate) ||
+                          dayjs(value).isAfter(startDate) ||
+                          "End date cannot be before start date"
+                        );
+                      },
+                    }}
                     render={({ field }) => (
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
@@ -505,6 +518,7 @@ export default function ProjectsPage() {
 
                   <Button
                     variant="contained"
+                    disabled={isSubmitting}
                     type="submit"
                     className="px-6 py-2 rounded-xl bg-indigo-600 
                                  text-white font-semibold hover:bg-indigo-700 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import {
-  deleteEmployee,
+  // deleteEmployee,
   getEmployees,
   viewEmployee,
   addEmployeeStudies,
@@ -69,7 +69,12 @@ export default function EmployeesPage() {
   const [showModal, setShowModal] = useState(false);
   const [addStudies, setAddStudies] = useState<Boolean>(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const { control, register, handleSubmit, reset } = useForm<StudyFormValues>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<StudyFormValues>({
     defaultValues: {
       education: [{ grade: "", percentage: "", passingYear: "" }],
     },
@@ -95,16 +100,16 @@ export default function EmployeesPage() {
     fetchEmployees();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    try {
-      const result = await deleteEmployee(id);
-      fetchEmployees();
-      toast.success(result.message || "Employee deleted successfully!");
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "Failed to delete employee");
-    }
-  };
+  // const handleDelete = async (id: string) => {
+  //   try {
+  //     const result = await deleteEmployee(id);
+  //     fetchEmployees();
+  //     toast.success(result.message || "Employee deleted successfully!");
+  //   } catch (error: any) {
+  //     console.error(error);
+  //     toast.error(error.response?.data?.message || "Failed to delete employee");
+  //   }
+  // };
 
   const handleView = async (id: string) => {
     try {
@@ -280,14 +285,14 @@ export default function EmployeesPage() {
             >
               <VisibilityIcon className="text-sm" />
             </IconButton>
-            <IconButton
+            {/* <IconButton
               color="error"
               onClick={() => {
                 handleDelete(row.original._id);
               }}
             >
               <DeleteIcon className="text-sm" />
-            </IconButton>
+            </IconButton> */}
             <Button
               size="small"
               startIcon={<AddIcon />}
@@ -484,7 +489,11 @@ export default function EmployeesPage() {
                     Cancel
                   </Button>
 
-                  <Button type="submit" variant="contained">
+                  <Button
+                    disabled={isSubmitting}
+                    type="submit"
+                    variant="contained"
+                  >
                     Save
                   </Button>
                 </div>

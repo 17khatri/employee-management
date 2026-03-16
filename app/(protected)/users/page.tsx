@@ -75,7 +75,7 @@ export default function UserPage() {
     reset: resetForm,
     watch,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
       firstName: "",
@@ -318,7 +318,7 @@ export default function UserPage() {
                     label="Last Name*"
                     variant="outlined"
                     {...register("lastName", {
-                      required: "Lasr Name is required",
+                      required: "Last Name is required",
                     })}
                     type="text"
                     size="small"
@@ -344,6 +344,7 @@ export default function UserPage() {
                     placeholder="Enter email"
                     className="w-full"
                     error={!!errors.email}
+                    disabled={!!editingUser}
                     helperText={errors.email ? errors.email.message : ""}
                   />
                 </div>
@@ -552,7 +553,11 @@ export default function UserPage() {
                     Cancel
                   </Button>
 
-                  <Button variant="contained" type="submit">
+                  <Button
+                    disabled={isSubmitting}
+                    variant="contained"
+                    type="submit"
+                  >
                     {editingUser ? "Update" : "Save"}
                   </Button>
                 </div>

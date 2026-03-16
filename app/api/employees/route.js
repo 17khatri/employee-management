@@ -21,38 +21,38 @@ export async function GET(req) {
   }
 }
 
-export async function DELETE(req) {
-  const auth = verifyAdmin(req);
-  if (auth.error) {
-    return auth.error;
-  }
-  try {
-    await connectDB();
-    const { id } = await req.json();
+// export async function DELETE(req) {
+//   const auth = verifyAdmin(req);
+//   if (auth.error) {
+//     return auth.error;
+//   }
+//   try {
+//     await connectDB();
+//     const { id } = await req.json();
 
-    if (!id) {
-      return NextResponse.json(
-        { message: "Employee ID is required" },
-        { status: 400 },
-      );
-    }
-    const now = new Date();
-    const deletedEmployee = await Employee.findByIdAndUpdate(id, {
-      deletedAt: now,
-    });
+//     if (!id) {
+//       return NextResponse.json(
+//         { message: "Employee ID is required" },
+//         { status: 400 },
+//       );
+//     }
+//     const now = new Date();
+//     const deletedEmployee = await Employee.findByIdAndUpdate(id, {
+//       deletedAt: now,
+//     });
 
-    if (!deletedEmployee) {
-      return NextResponse.json(
-        { message: "Employee not found" },
-        { status: 404 },
-      );
-    }
+//     if (!deletedEmployee) {
+//       return NextResponse.json(
+//         { message: "Employee not found" },
+//         { status: 404 },
+//       );
+//     }
 
-    return NextResponse.json(
-      { message: "Employee deleted successfully" },
-      { status: 200 },
-    );
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+//     return NextResponse.json(
+//       { message: "Employee deleted successfully" },
+//       { status: 200 },
+//     );
+//   } catch (error) {
+//     return NextResponse.json({ error: error.message }, { status: 500 });
+//   }
+// }

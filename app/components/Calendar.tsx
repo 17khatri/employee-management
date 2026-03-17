@@ -119,16 +119,11 @@ export default function Calendar() {
   }, []);
 
   const calendarEvents = events.map((event) => {
-    const dateOnly = new Date(event.date).toLocaleDateString("en-CA");
-
-    const start = new Date(`${dateOnly}T${event.startTime}:00`);
-    const end = new Date(`${dateOnly}T${event.endTime}:00`);
-
     return {
       id: event._id,
       title: event.title,
-      start: start,
-      end: end,
+      start: new Date(event.startTime),
+      end: new Date(event.endTime),
       date: event.date,
       extendedProps: event,
     };
@@ -218,17 +213,12 @@ export default function Calendar() {
           setIsModalOpen(true);
         }}
         eventDrop={async (info) => {
-          const formatTime = (date: any) => {
-            const hours = date.getHours().toString().padStart(2, "0");
-            const minutes = date.getMinutes().toString().padStart(2, "0");
-            return `${hours}:${minutes}`;
-          };
           try {
             const event = info.event;
             const updatedData = {
               date: event.start?.toLocaleDateString("en-CA"),
-              startTime: formatTime(event.start),
-              endTime: formatTime(event.end),
+              startTime: event.start?.toISOString(),
+              endTime: event.end?.toISOString(),
             };
             await updateMeeting(event.id, updatedData);
           } catch (error) {
@@ -239,15 +229,10 @@ export default function Calendar() {
         eventResize={async (info) => {
           try {
             const event = info.event;
-            const formatTime = (date: any) => {
-              const hours = date.getHours().toString().padStart(2, "0");
-              const minutes = date.getMinutes().toString().padStart(2, "0");
-              return `${hours}:${minutes}`;
-            };
             const updatedData = {
               date: event.start?.toLocaleDateString("en-CA"),
-              startTime: formatTime(event.start),
-              endTime: formatTime(event.end),
+              startTime: event.start?.toISOString(),
+              endTime: event.end?.toISOString(),
             };
             await updateMeeting(event.id, updatedData);
           } catch (error) {}

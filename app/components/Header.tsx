@@ -17,7 +17,6 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
@@ -32,6 +31,7 @@ import TextField from "@mui/material/TextField";
 import toast from "react-hot-toast";
 import LogOutPopup from "./LogOutPopup";
 import { useForm } from "react-hook-form";
+import CommonButton from "./Button";
 
 interface User {
   firstName: string;
@@ -271,10 +271,13 @@ export default function Header() {
   const { user } = useSelector((state: RootState) => state.auth);
 
   return (
-    <header className="h-12 bg-gray-800 shadow flex items-center justify-between px-6 border-b border-gray-700 relative">
-      <h1 className="font-semibold text-white">
-        Welcome, {user?.firstName} {user?.lastName}{" "}
-      </h1>
+    <header className="h-12 bg-gray-50 shadow sticky top-0 flex items-center justify-end px-6 z-30">
+      <div className="flex flex-col">
+        <h1 className="font-semibold text-sm text-gray-700">
+          {user?.firstName} {user?.lastName}{" "}
+        </h1>
+        <h1 className=" text-xs text-gray-700">{user?.department?.name}</h1>
+      </div>
       <Tooltip title="Account settings">
         <IconButton
           onClick={handleClick}
@@ -385,7 +388,7 @@ export default function Header() {
               </Avatar>
               {user?.role === "employee" && (
                 <>
-                  <Button variant="outlined" component="label">
+                  <CommonButton>
                     Change Photo
                     <input
                       type="file"
@@ -394,15 +397,13 @@ export default function Header() {
                       accept="image/*"
                       onChange={handleImageChange}
                     />
-                  </Button>
-                  <Button
+                  </CommonButton>
+                  <CommonButton
                     onClick={() => handleImageRemove()}
-                    variant="outlined"
-                    color="error"
-                    component="label"
+                    variant="outline"
                   >
                     Remove Photo
-                  </Button>
+                  </CommonButton>
                 </>
               )}
             </div>
@@ -492,10 +493,12 @@ export default function Header() {
             )}
 
             <DialogActions sx={{ mt: 2 }}>
-              <Button onClick={handleCloseProfile}>Cancel</Button>
-              <Button disabled={isSubmitting} type="submit" variant="contained">
+              <CommonButton variant="outline" onClick={handleCloseProfile}>
+                Cancel
+              </CommonButton>
+              <CommonButton disabled={isSubmitting} type="submit">
                 Update
-              </Button>
+              </CommonButton>
             </DialogActions>
           </form>
         </DialogContent>
@@ -606,12 +609,15 @@ export default function Header() {
             )}
 
             <DialogActions sx={{ mt: 2 }}>
-              <Button onClick={() => setOpenChangePassword(false)}>
+              <CommonButton
+                variant="outline"
+                onClick={() => setOpenChangePassword(false)}
+              >
                 Cancel
-              </Button>
-              <Button disabled={isSubmitting} type="submit" variant="contained">
+              </CommonButton>
+              <CommonButton disabled={isSubmitting} type="submit">
                 Update Password
-              </Button>
+              </CommonButton>
             </DialogActions>
           </form>
         </DialogContent>

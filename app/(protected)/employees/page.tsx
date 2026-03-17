@@ -19,12 +19,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteIcon from "@mui/icons-material/Delete";
 import RemoveIcon from "@mui/icons-material/Remove";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import FormControl from "@mui/material/FormControl";
@@ -34,6 +31,7 @@ import MenuItem from "@mui/material/MenuItem";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import NumberField from "@/app/components/NumberField";
+import CommonButton from "@/app/components/Button";
 
 interface Employee {
   _id: string;
@@ -278,13 +276,15 @@ export default function EmployeesPage() {
         header: "Action",
         cell: ({ row }) => (
           <div className="flex">
-            <IconButton
+            <CommonButton
+              variant="outline"
               onClick={() => {
                 handleView(row.original._id);
               }}
+              className="mx-2"
             >
-              <VisibilityIcon className="text-sm" />
-            </IconButton>
+              View
+            </CommonButton>
             {/* <IconButton
               color="error"
               onClick={() => {
@@ -293,23 +293,17 @@ export default function EmployeesPage() {
             >
               <DeleteIcon className="text-sm" />
             </IconButton> */}
-            <Button
-              size="small"
+            <CommonButton
+              variant="primary"
               startIcon={<AddIcon />}
-              variant="text"
-              color="primary"
+              className="mx-2"
               onClick={() => handleStudyModalOpen(row.original)}
             >
               Add Studies
-            </Button>
-            <Button
-              size="small"
-              color="error"
-              variant="contained"
-              onClick={() => downloadEmployeePDF(row.original)}
-            >
+            </CommonButton>
+            <CommonButton onClick={() => downloadEmployeePDF(row.original)}>
               Download PDF
-            </Button>
+            </CommonButton>
           </div>
         ),
       },
@@ -481,21 +475,17 @@ export default function EmployeesPage() {
                 ))}
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button
-                    variant="outlined"
+                  <CommonButton
+                    variant="outline"
                     type="button"
                     onClick={handleStudyModalClose}
                   >
                     Cancel
-                  </Button>
+                  </CommonButton>
 
-                  <Button
-                    disabled={isSubmitting}
-                    type="submit"
-                    variant="contained"
-                  >
+                  <CommonButton disabled={isSubmitting} type="submit">
                     Save
-                  </Button>
+                  </CommonButton>
                 </div>
               </form>
             </div>
@@ -536,12 +526,12 @@ export default function EmployeesPage() {
                 <strong>Active:</strong>{" "}
                 {selectedEmployee.isActive ? "Yes" : "No"}
               </p>
-              <button
+              <CommonButton
                 onClick={() => setShowModal(false)}
                 className="mt-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
               >
                 Close
-              </button>
+              </CommonButton>
             </div>
           </div>
         )}

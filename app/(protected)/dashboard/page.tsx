@@ -20,7 +20,6 @@ import { useSelector } from "react-redux";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import Button from "@mui/material/Button";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { Controller } from "react-hook-form";
@@ -33,6 +32,7 @@ import { TASK_STATUS_VALUES } from "@/app/constants/task";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormHelperText from "@mui/material/FormHelperText";
+import CommonButton from "@/app/components/Button";
 
 interface TodayLeave {
   _id: string;
@@ -205,7 +205,6 @@ export default function DashboardPage() {
       if (response.length > 0) {
         const attendance = response[0];
         setTodayAttendance(attendance);
-        console.log(todayAttendance, "todayAttendance");
         setValue("inTime", attendance.inTime || "");
         setValue("outTime", attendance.outTime || "");
       }
@@ -265,7 +264,6 @@ export default function DashboardPage() {
     try {
       const result = await getEmployeesTask();
       setTasks(result);
-      console.log(result);
     } catch (error) {
       console.error(error);
     }
@@ -380,7 +378,30 @@ export default function DashboardPage() {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        return <p>{params.row.taskId?.status}</p>;
+        const status = params.row.taskId.status;
+
+        const getStatusStyle = () => {
+          switch (status) {
+            case "completed":
+              return "bg-green-100 text-green-700";
+            case "pending":
+              return "bg-yellow-100 text-yellow-700";
+            case "in-progress":
+              return "bg-blue-100 text-blue-700";
+            default:
+              return "bg-gray-100 text-gray-700";
+          }
+        };
+
+        return (
+          <div className="flex items-center h-full">
+            <span
+              className={`${getStatusStyle()} px-2 py-1 text-xs rounded-md capitalize`}
+            >
+              {status}
+            </span>
+          </div>
+        );
       },
     },
     {
@@ -421,14 +442,10 @@ export default function DashboardPage() {
         const task = params.row;
 
         return (
-          <div className="flex items-center">
-            <Button
-              onClick={() => handleLog(task)}
-              size="small"
-              variant="contained"
-            >
+          <div className="flex items-center h-full">
+            <CommonButton variant="outline" onClick={() => handleLog(task)}>
               Log
-            </Button>
+            </CommonButton>
           </div>
         );
       },
@@ -445,12 +462,12 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
-      <div className="min-h-screen w-full bg-gradient-to-br from-indigo-100 via-white to-blue-100 p-8">
+      <div className="min-h-screen w-full p-8">
         {/* Header */}
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-start">
             <div
-              className={`${user?.role === "employee" ? "w-[60%]" : "w-full"} bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl p-8 shadow-xl`}
+              className={`${user?.role === "employee" ? "w-[65%]" : "w-full"} bg-white text-gray-700 rounded-2xl p-8 shadow-xl`}
             >
               <h1 className="text-4xl font-bold">Dashboard</h1>
               <p className="mt-2 text-lg opacity-90">
@@ -532,14 +549,14 @@ export default function DashboardPage() {
                     )}
                   />
                 </LocalizationProvider>
-                <Button
-                  variant="contained"
+                <CommonButton
                   disabled={isAttendanceSubmitting}
                   className="w-full"
                   type="submit"
+                  size="md"
                 >
                   {todayAttendance ? "Update Time" : "Enter Time"}
-                </Button>
+                </CommonButton>
                 {attendanceControl._formValues?.inTime &&
                   attendanceControl._formValues?.outTime && (
                     <p className="text-sm font-semibold text-gray-700">
@@ -624,9 +641,11 @@ export default function DashboardPage() {
                       rules={{
                         required: "Actual Hours is required",
                         min: {
-                          value: 1,
-                          message: "Logged hours is must be greater then one",
+                          value: 0,
+                          message: "Value must be greater than 0",
                         },
+                        validate: (value) =>
+                          value > 0 || "Value must be greater than 0",
                       }}
                       render={({ field, fieldState }) => (
                         <NumberField
@@ -681,24 +700,17 @@ export default function DashboardPage() {
                     </FormControl>
                   </div>
                   <div className="flex justify-end gap-3 pt-4">
-                    <Button
+                    <CommonButton
                       type="button"
+                      variant="outline"
                       onClick={() => setLogTask(null)}
-                      className="px-5 py-2 rounded-xl border hover:bg-gray-100"
                     >
                       Cancel
-                    </Button>
+                    </CommonButton>
 
-                    <Button
-                      variant="contained"
-                      disabled={isLogSubmitting}
-                      type="submit"
-                      className="px-6 py-2 rounded-xl bg-indigo-600 
-                                           text-white font-semibold hover:bg-indigo-700 
-                                           shadow-md hover:shadow-lg transition"
-                    >
+                    <CommonButton disabled={isLogSubmitting} type="submit">
                       {logTask ? "Update" : "Save Log"}
-                    </Button>
+                    </CommonButton>
                   </div>
                 </form>
               </div>

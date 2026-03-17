@@ -21,6 +21,7 @@ import DialogActions from "@mui/material/DialogActions";
 import Typography from "@mui/material/Typography";
 import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
+import CommonButton from "@/app/components/Button";
 
 interface Task {
   _id: string;
@@ -227,7 +228,6 @@ export default function WorksheetPage() {
             </FormControl>
           </div>
           <div className="flex gap-4">
-            {/* <Button variant="contained" color="success"> */}
             <input
               type="file"
               ref={fileInputRef}
@@ -236,18 +236,17 @@ export default function WorksheetPage() {
               onChange={handleDrop}
             />
 
-            <Button
-              variant="contained"
-              color="primary"
+            <CommonButton
+              variant="primary"
               onClick={() => fileInputRef.current?.click()}
             >
               Import Excel
-            </Button>
+            </CommonButton>
             {/* Import Excel file
             </Button> */}
-            <Button onClick={exportToExcel} variant="contained" color="success">
+            <CommonButton onClick={exportToExcel} variant="outline">
               Export to Excel
-            </Button>
+            </CommonButton>
           </div>
         </div>
         {data.length === 0 ? (
@@ -277,17 +276,11 @@ export default function WorksheetPage() {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setModelOpen(false)} color="error">
+          <CommonButton onClick={() => setModelOpen(false)} variant="outline">
             Cancel
-          </Button>
+          </CommonButton>
 
-          <Button
-            onClick={handleSaveImport}
-            variant="contained"
-            color="primary"
-          >
-            Save
-          </Button>
+          <CommonButton onClick={handleSaveImport}>Save</CommonButton>
         </DialogActions>
       </Dialog>
     </ProtectedRoute>

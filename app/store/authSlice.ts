@@ -13,6 +13,9 @@ interface User {
         salary?: number;
         profilePhoto?: string;
     }
+    department: {
+        name: string;
+    };
 }
 
 interface AuthState {

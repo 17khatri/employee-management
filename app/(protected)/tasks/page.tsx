@@ -14,23 +14,19 @@ import {
 import toast from "react-hot-toast";
 import { Controller, useForm } from "react-hook-form";
 import { TASK_STATUS_VALUES } from "@/app/constants/task";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormHelperText from "@mui/material/FormHelperText";
-import IconButton from "@mui/material/IconButton";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import NumberField from "@/app/components/NumberField";
 import DeletePopup from "@/app/components/DeletePopup";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import CommonButton from "@/app/components/Button";
 
 interface Task {
   _id: string;
@@ -87,6 +83,7 @@ export default function TasksPage() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [openPopup, setOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
   const user = useSelector((state: RootState) => state?.auth.user);
 
   const handleOpen = () => {
@@ -265,6 +262,32 @@ export default function TasksPage() {
       field: "status",
       headerName: "Status",
       flex: 1,
+      renderCell: (params) => {
+        const status = params.row.status;
+
+        const getStatusStyle = () => {
+          switch (status) {
+            case "completed":
+              return "bg-green-100 text-green-700";
+            case "pending":
+              return "bg-yellow-100 text-yellow-700";
+            case "in-progress":
+              return "bg-blue-100 text-blue-700";
+            default:
+              return "bg-gray-100 text-gray-700";
+          }
+        };
+
+        return (
+          <div className="flex items-center h-full">
+            <span
+              className={`${getStatusStyle()} px-2 py-1 text-xs rounded-md capitalize`}
+            >
+              {status}
+            </span>
+          </div>
+        );
+      },
     },
     {
       field: "estimationHours",
@@ -301,26 +324,36 @@ export default function TasksPage() {
         const task = params.row;
 
         return (
-          <div className="flex items-center">
-            <IconButton onClick={() => handleView(task)}>
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
+          <div className="flex items-center h-full">
+            <CommonButton
+              className="mx-2"
+              variant="outline"
+              onClick={() => handleView(task)}
+            >
+              {" "}
+              View
+            </CommonButton>
 
             {user?.role === "employee" && (
               <>
-                <IconButton onClick={() => handleEdit(task)}>
-                  <EditIcon fontSize="small" />
-                </IconButton>
+                <CommonButton
+                  variant="outline"
+                  onClick={() => handleEdit(task)}
+                  className="mx-2"
+                >
+                  Edit
+                </CommonButton>
 
-                <IconButton
-                  color="error"
+                <CommonButton
+                  className="mx-2"
+                  variant="outline"
                   onClick={() => {
                     handleOpen();
                     setDeleteId(task._id);
                   }}
                 >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                  Delete
+                </CommonButton>
               </>
             )}
           </div>
@@ -338,6 +371,31 @@ export default function TasksPage() {
   ).length;
 
   const doneTasks = tasks.filter((t) => t.status === "completed").length;
+
+  const filteredTasks = useMemo(() => {
+    let data = tasks;
+
+    // ✅ Status filter
+    if (statusFilter !== "all") {
+      data = data.filter((t) => t.status === statusFilter);
+    }
+
+    // ✅ Search filter
+    if (globalFilter) {
+      const search = globalFilter.toLowerCase();
+
+      data = data.filter(
+        (t) =>
+          t.title.toLowerCase().includes(search) ||
+          t.description?.toLowerCase().includes(search) ||
+          t.projectId?.title.toLowerCase().includes(search) ||
+          t.assignedTo?.userId?.firstName?.toLowerCase().includes(search) ||
+          t.assignedTo?.userId?.lastName?.toLowerCase().includes(search),
+      );
+    }
+
+    return data;
+  }, [tasks, statusFilter, globalFilter]);
 
   return (
     <ProtectedRoute allowRoles={["admin", "employee"]}>
@@ -512,9 +570,11 @@ export default function TasksPage() {
                     rules={{
                       required: "Estimation Hours is required",
                       min: {
-                        value: 1,
-                        message: "Estimation hours must be grater then one",
+                        value: 0,
+                        message: "Value must be greater than 0",
                       },
+                      validate: (value) =>
+                        value > 0 || "Value must be greater than 0",
                     }}
                     render={({ field, fieldState }) => (
                       <NumberField
@@ -534,24 +594,18 @@ export default function TasksPage() {
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button
+                  <CommonButton
                     type="button"
+                    variant="outline"
                     onClick={handleModalClose}
                     className="px-5 py-2 rounded-xl border hover:bg-gray-100"
                   >
                     Cancel
-                  </Button>
+                  </CommonButton>
 
-                  <Button
-                    variant="contained"
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-2 rounded-xl bg-indigo-600 
-                                 text-white font-semibold hover:bg-indigo-700 
-                                 shadow-md hover:shadow-lg transition"
-                  >
+                  <CommonButton type="submit" disabled={isSubmitting}>
                     {editingTask ? "Update" : "Save"}
-                  </Button>
+                  </CommonButton>
                 </div>
               </form>
             </div>
@@ -563,24 +617,37 @@ export default function TasksPage() {
         ) : (
           <>
             <div className="flex items-center justify-between">
-              {/* 🔍 Search Input */}
-              <TextField
-                size="small"
-                type="text"
-                placeholder="Search..."
-                value={globalFilter ?? ""}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                className="border p-2 rounded mb-4 w-64"
-              />
-              {user?.role === "employee" && (
-                <Button
-                  variant="contained"
+              <div className="flex gap-2">
+                {/* 🔍 Search */}
+                <TextField
                   size="small"
-                  startIcon={<AddIcon />}
-                  onClick={handleModalOpen}
-                >
+                  type="text"
+                  placeholder="Search..."
+                  value={globalFilter ?? ""}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="w-64"
+                />
+
+                {/* ✅ Status Filter */}
+                <FormControl size="small" className="w-40">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label="Status"
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <MenuItem value="all">All</MenuItem>
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="in-progress">In Progress</MenuItem>
+                    <MenuItem value="completed">Completed</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
+
+              {user?.role === "employee" && (
+                <CommonButton startIcon={<AddIcon />} onClick={handleModalOpen}>
                   Add Task
-                </Button>
+                </CommonButton>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
@@ -612,7 +679,7 @@ export default function TasksPage() {
             </div>
             <div style={{ height: 450, width: "100%", marginTop: "10px" }}>
               <DataGrid
-                rows={tasks}
+                rows={filteredTasks}
                 columns={columns}
                 getRowId={(row) => row._id}
                 pageSizeOptions={[5, 10, 20]}

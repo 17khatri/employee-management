@@ -28,6 +28,7 @@ import Button from "@mui/material/Button";
 import toast from "react-hot-toast";
 import { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
+import CommonButton from "@/app/components/Button";
 
 interface Task {
   title: string;
@@ -187,6 +188,7 @@ export default function WorkPlanPage() {
         status: "",
         isActive: true,
       });
+      fetchTasks();
     }
   };
 
@@ -247,6 +249,32 @@ export default function WorkPlanPage() {
       field: "status",
       headerName: "Status",
       flex: 1,
+      renderCell: (params) => {
+        const status = params.row.status;
+
+        const getStatusStyle = () => {
+          switch (status) {
+            // case "completed":
+            //   return "bg-green-100 text-green-700";
+            case "pending":
+              return "bg-yellow-100 text-yellow-700";
+            case "in-progress":
+              return "bg-blue-100 text-blue-700";
+            default:
+              return "bg-gray-100 text-gray-700";
+          }
+        };
+
+        return (
+          <div className="flex items-center h-full">
+            <span
+              className={`${getStatusStyle()} px-2 py-1 text-xs rounded-md capitalize`}
+            >
+              {status}
+            </span>
+          </div>
+        );
+      },
     },
     {
       field: "actualHours",
@@ -300,8 +328,8 @@ export default function WorkPlanPage() {
   ];
 
   const undoneTasks = tasks.filter(
-    (t) => t.status === "pending" && "in-progress",
-  ).length;
+    (t) => t.status === "pending" || t.status === "in-progress",
+  );
 
   return (
     <ProtectedRoute allowRoles={["employee"]}>
@@ -375,9 +403,11 @@ export default function WorkPlanPage() {
                   rules={{
                     required: "Estimation Hours is required",
                     min: {
-                      value: 1,
-                      message: "Estimation hours must be grater then one",
+                      value: 0,
+                      message: "Value must be greater than 0",
                     },
+                    validate: (value) =>
+                      value > 0 || "Value must be greater than 0",
                   }}
                   render={({ field, fieldState }) => (
                     <NumberField
@@ -452,14 +482,14 @@ export default function WorkPlanPage() {
                 </label>
               )}
             />
-            <Button
+            <CommonButton
+              size="md"
+              className="w-64"
               disabled={isSubmitting}
               type="submit"
-              variant="contained"
-              sx={{ width: "300px" }}
             >
               Create Task
-            </Button>
+            </CommonButton>
           </form>
         </div>
         <div className="bg-white p-4 mt-4 rounded-2xl">
@@ -467,13 +497,9 @@ export default function WorkPlanPage() {
             <p className="font-semibold">
               Select Tasks for {formatDate(selectedDate)}
             </p>
-            <Button
-              onClick={handleSaveWorkplan}
-              variant="contained"
-              color="success"
-            >
+            <CommonButton onClick={handleSaveWorkplan}>
               Save workplan
-            </Button>
+            </CommonButton>
           </div>
           <p className="text-sm text-gray-500 mb-4">
             Select tasks you plan to work on this date and add your estimated
@@ -481,7 +507,7 @@ export default function WorkPlanPage() {
             reference.
           </p>
           <DataGrid
-            rows={tasks}
+            rows={undoneTasks}
             columns={columns}
             getRowId={(row) => row._id}
             pageSizeOptions={[5, 10, 20]}

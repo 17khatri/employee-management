@@ -11,7 +11,6 @@ import {
 } from "@/app/services/auth.service";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import { useSelector } from "react-redux";
 import AddIcon from "@mui/icons-material/Add";
 import { RootState } from "@/app/store/store";
@@ -25,14 +24,12 @@ import { LEAVE_TYPES_VALUES } from "@/app/constants/leave";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import IconButton from "@mui/material/IconButton";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import toast from "react-hot-toast";
 import dayjs, { Dayjs } from "dayjs";
 import DeletePopup from "@/app/components/DeletePopup";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
+import CommonButton from "@/app/components/Button";
 
 interface Leaves {
   _id: string;
@@ -217,7 +214,37 @@ export default function LeavesPage() {
       headerName: "Leave Status",
       flex: 1,
     },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+      renderCell: (params) => {
+        const status = params.row?.leaveStatus;
 
+        const getStatusStyle = () => {
+          switch (status) {
+            case "Approved":
+              return "bg-green-100 text-green-700";
+            case "Pending":
+              return "bg-yellow-100 text-yellow-700";
+            case "Rejected":
+              return "bg-red-100 text-red-700";
+            default:
+              return "bg-gray-100 text-gray-700";
+          }
+        };
+
+        return (
+          <div className="flex items-center h-full">
+            <span
+              className={`${getStatusStyle()} px-2 py-1 text-xs rounded-md capitalize`}
+            >
+              {status}
+            </span>
+          </div>
+        );
+      },
+    },
     {
       field: "reason",
       headerName: "Reason",
@@ -235,64 +262,64 @@ export default function LeavesPage() {
           return (
             <>
               {leave.leaveStatus === "Pending" && (
-                <>
-                  <Button
-                    size="small"
+                <div className="flex items-center gap-2 h-full">
+                  <CommonButton
+                    variant="outline"
                     onClick={() => handleUpdateStatus(leave._id, "Approved")}
                   >
                     Approve
-                  </Button>
+                  </CommonButton>
 
-                  <Button
-                    size="small"
-                    color="error"
+                  <CommonButton
+                    variant="outline"
                     onClick={() => handleUpdateStatus(leave._id, "Rejected")}
                   >
                     Reject
-                  </Button>
-                </>
+                  </CommonButton>
+                </div>
               )}
               {leave.leaveStatus === "Approved" && (
-                <>
-                  <Button
-                    size="small"
-                    color="error"
+                <div className="flex items-center h-full">
+                  <CommonButton
+                    variant="outline"
                     onClick={() => handleUpdateStatus(leave._id, "Rejected")}
                   >
                     Reject
-                  </Button>
-                </>
+                  </CommonButton>
+                </div>
               )}
               {leave.leaveStatus === "Rejected" && (
-                <>
-                  <Button
-                    size="small"
-                    onClick={() => handleUpdateStatus(leave._id, "Rejected")}
+                <div className="flex items-center h-full">
+                  <CommonButton
+                    variant="outline"
+                    onClick={() => {
+                      handleUpdateStatus(leave._id, "Approved");
+                    }}
                   >
                     Approve
-                  </Button>
-                </>
+                  </CommonButton>
+                </div>
               )}
             </>
           );
         }
         if (user?.role === "employee") {
           return (
-            <>
-              <IconButton onClick={() => handleEdit(leave)}>
-                <EditIcon fontSize="small" />
-              </IconButton>
+            <div className="flex gap-2 items-center h-full">
+              <CommonButton variant="outline" onClick={() => handleEdit(leave)}>
+                Edit
+              </CommonButton>
 
-              <IconButton
-                color="error"
+              <CommonButton
+                variant="outline"
                 onClick={() => {
                   handleOpen();
                   setDeleteId(leave._id);
                 }}
               >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </>
+                Delete
+              </CommonButton>
+            </div>
           );
         }
       },
@@ -323,14 +350,9 @@ export default function LeavesPage() {
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-xl font-bold mb-4">Leaves</h1>
           {user?.role === "employee" && (
-            <Button
-              onClick={handleModalOpen}
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon />}
-            >
+            <CommonButton onClick={handleModalOpen} startIcon={<AddIcon />}>
               Apply For Leave
-            </Button>
+            </CommonButton>
           )}
         </div>
 
@@ -475,15 +497,20 @@ export default function LeavesPage() {
                     helperText={errors.reason ? errors.reason.message : ""}
                   />
                 </div>
-                <Button
-                  sx={{ marginTop: "5px" }}
-                  disabled={isSubmitting}
-                  type="submit"
-                  variant="contained"
-                  size="small"
-                >
-                  {editingLeave ? "Update Leave" : "Submit"}
-                </Button>
+                <div className="flex justify-end gap-3 pt-4">
+                  <CommonButton
+                    type="button"
+                    variant="outline"
+                    onClick={handleModalClose}
+                    className="px-5 py-2 rounded-xl border hover:bg-gray-100"
+                  >
+                    Cancel
+                  </CommonButton>
+
+                  <CommonButton disabled={isSubmitting} type="submit">
+                    {editingLeave ? "Update Leave" : "Submit"}
+                  </CommonButton>
+                </div>
               </form>
             </div>
           </div>

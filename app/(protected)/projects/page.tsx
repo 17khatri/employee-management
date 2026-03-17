@@ -12,13 +12,8 @@ import {
 } from "@/app/services/auth.service";
 import toast from "react-hot-toast";
 import { Controller, useForm } from "react-hook-form";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import FormControl from "@mui/material/FormControl";
@@ -31,6 +26,7 @@ import dayjs from "dayjs";
 import DeletePopup from "@/app/components/DeletePopup";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
+import CommonButton from "@/app/components/Button";
 interface Task {
   _id: string;
   title: string;
@@ -195,26 +191,32 @@ export default function ProjectsPage() {
       sortable: false,
       flex: 1,
       renderCell: (params) => (
-        <div className="flex">
-          <IconButton color="primary" onClick={() => handleView(params.row)}>
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-
+        <div className="flex items-center h-full">
+          <CommonButton
+            onClick={() => handleView(params.row)}
+            variant="outline"
+          >
+            View
+          </CommonButton>
           {user?.role === "admin" && (
             <>
-              <IconButton onClick={() => handleEdit(params.row)}>
-                <EditIcon fontSize="small" />
-              </IconButton>
+              <CommonButton
+                variant="outline"
+                onClick={() => handleEdit(params.row)}
+                className="mx-2"
+              >
+                Edit
+              </CommonButton>
 
-              <IconButton
-                color="error"
+              <CommonButton
+                variant="outline"
                 onClick={() => {
                   setDeleteId(params.row._id);
                   handleOpen();
                 }}
               >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+                Delete
+              </CommonButton>
             </>
           )}
         </div>
@@ -508,24 +510,22 @@ export default function ProjectsPage() {
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button
+                  <CommonButton
                     type="button"
+                    variant="outline"
                     onClick={handleModalClose}
                     className="px-5 py-2 rounded-xl border hover:bg-gray-100"
                   >
                     Cancel
-                  </Button>
+                  </CommonButton>
 
-                  <Button
-                    variant="contained"
+                  <CommonButton
+                    variant="danger"
                     disabled={isSubmitting}
                     type="submit"
-                    className="px-6 py-2 rounded-xl bg-indigo-600 
-                                 text-white font-semibold hover:bg-indigo-700 
-                                 shadow-md hover:shadow-lg transition"
                   >
                     {editingProject ? "Update" : "Save"}
-                  </Button>
+                  </CommonButton>
                 </div>
               </form>
             </div>
@@ -547,14 +547,13 @@ export default function ProjectsPage() {
                 className="border p-2 rounded mb-4 w-64"
               />
               {user?.role === "admin" && (
-                <Button
-                  variant="contained"
-                  size="small"
+                <CommonButton
+                  variant="danger"
                   startIcon={<AddIcon />}
                   onClick={handleModalOpen}
                 >
                   Add Project
-                </Button>
+                </CommonButton>
               )}
             </div>
             <Paper sx={{ height: 450, width: "100%", mt: 2 }}>

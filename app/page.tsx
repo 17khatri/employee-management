@@ -8,11 +8,11 @@ import { useDispatch } from "react-redux";
 import { setAuth } from "./store/authSlice";
 import { motion } from "framer-motion";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import toast from "react-hot-toast";
 import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import CommonButton from "./components/Button";
 
 export default function Home() {
   const {
@@ -138,14 +138,15 @@ export default function Home() {
 
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-          <Button
-            variant="contained"
+          <CommonButton
+            variant="primary"
+            size="md"
             type="submit"
             disabled={loading}
             className="w-full"
           >
             {loading ? "Logging in..." : "Login"}
-          </Button>
+          </CommonButton>
         </form>
       </motion.div>
     </div>

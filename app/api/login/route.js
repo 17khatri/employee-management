@@ -10,7 +10,13 @@ export async function POST(req) {
 
     const { email, password } = await req.json();
     // 1. Check user exists
-    const user = await User.findOne({ email }).populate("employee");
+    const user = await User.findOne({ email }).populate({
+      path: "employee",
+      populate: {
+        path: "departmentId",
+        select: "name",
+      },
+    });
     if (!user) {
       return NextResponse.json(
         { message: "Invalid email or password" },
@@ -52,6 +58,7 @@ export async function POST(req) {
           firstName: user.firstName,
           lastName: user.lastName,
           profilePhoto: user.employee?.profilePhoto || null,
+          department: user.employee?.departmentId || null,
         },
         token,
       },

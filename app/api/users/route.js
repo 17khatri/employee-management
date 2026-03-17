@@ -184,6 +184,7 @@ export async function PATCH(req) {
       salary,
       birthDate,
       gender,
+      departmentId,
     } = body;
 
     /* =====================================================
@@ -232,6 +233,7 @@ export async function PATCH(req) {
           firstName,
           lastName,
           email,
+          departmentId,
           isActive,
         },
         { new: true },
@@ -242,6 +244,7 @@ export async function PATCH(req) {
         salary,
         birthDate,
         gender,
+        departmentId,
       };
 
       const updatedEmployee = await Employee.findOneAndUpdate(

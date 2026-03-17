@@ -7,21 +7,18 @@ import {
   getHolidays,
   updateHoliday,
 } from "@/app/services/auth.service";
-import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import Button from "@mui/material/Button";
 import { Controller, useForm } from "react-hook-form";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import EditIcon from "@mui/icons-material/Edit";
 import dayjs, { Dayjs } from "dayjs";
 import DeletePopup from "@/app/components/DeletePopup";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import CommonButton from "@/app/components/Button";
 
 interface Holidays {
   _id: string;
@@ -132,20 +129,20 @@ export default function HolidaysPage() {
         const holiday = params.row;
 
         return (
-          <div className="flex">
-            <IconButton onClick={() => handleEdit(holiday)}>
-              <EditIcon fontSize="small" />
-            </IconButton>
+          <div className="flex gap-2 items-center h-full">
+            <CommonButton variant="outline" onClick={() => handleEdit(holiday)}>
+              Edit
+            </CommonButton>
 
-            <IconButton
-              color="error"
+            <CommonButton
+              variant="outline"
               onClick={() => {
                 handleOpen();
                 setDeleteId(holiday._id);
               }}
             >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+              Delete
+            </CommonButton>
           </div>
         );
       },
@@ -209,14 +206,9 @@ export default function HolidaysPage() {
         <div className="flex items-center p-3 justify-between">
           <h1 className="text-xl font-bold mb-4">Holidays</h1>
 
-          <Button
-            onClick={handleModalOpen}
-            variant="contained"
-            size="small"
-            startIcon={<AddIcon />}
-          >
+          <CommonButton onClick={handleModalOpen} startIcon={<AddIcon />}>
             Add Holidays
-          </Button>
+          </CommonButton>
         </div>
         {loading ? (
           <p>Loading...</p>
@@ -311,15 +303,20 @@ export default function HolidaysPage() {
                     </LocalizationProvider>
                   )}
                 />
-                <Button
-                  sx={{ marginTop: "5px" }}
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="contained"
-                  size="small"
-                >
-                  Submit
-                </Button>
+                <div className="flex justify-end gap-3 pt-4">
+                  <CommonButton
+                    type="button"
+                    variant="outline"
+                    onClick={handleModalClose}
+                    className="px-5 py-2 rounded-xl border hover:bg-gray-100"
+                  >
+                    Cancel
+                  </CommonButton>
+
+                  <CommonButton type="submit" disabled={isSubmitting}>
+                    Submit
+                  </CommonButton>
+                </div>
               </form>
             </div>
           </div>

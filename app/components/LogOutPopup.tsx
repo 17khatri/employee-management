@@ -3,6 +3,7 @@ import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogTitle from "@mui/material/DialogTitle";
+import CommonButton from "./Button";
 
 interface Props {
   open: boolean;
@@ -22,16 +23,21 @@ export default function LogOutPopup({
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+          },
+        }}
       >
-        <DialogTitle id="alert-dialog-title">
+        <DialogTitle sx={{ fontSize: "16px" }} id="alert-dialog-title">
           {"Are you sure you want to logout?"}
         </DialogTitle>
 
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleLogout} autoFocus>
-            Logout
-          </Button>
+          <CommonButton variant="outline" onClick={handleClose}>
+            Cancel
+          </CommonButton>
+          <CommonButton onClick={handleLogout}>Logout</CommonButton>
         </DialogActions>
       </Dialog>
     </React.Fragment>

@@ -11,16 +11,13 @@ import {
 } from "@/app/services/auth.service";
 import { ROLE_VALUES } from "@/app/constants/roles";
 import toast from "react-hot-toast";
-import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
-import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
-import IconButton from "@mui/material/IconButton";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -33,6 +30,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
+import CommonButton from "@/app/components/Button";
 
 interface User {
   _id: string;
@@ -238,12 +236,15 @@ export default function UserPage() {
       sortable: false,
       flex: 1,
       renderCell: (params) => (
-        <IconButton
-          disabled={user?.id === params.row._id}
-          onClick={() => handleEdit(params.row)}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
+        <div className="h-full flex items-center">
+          <CommonButton
+            disabled={user?.id === params.row._id}
+            onClick={() => handleEdit(params.row)}
+            variant="outline"
+          >
+            Edit
+          </CommonButton>
+        </div>
       ),
     },
   ];
@@ -545,21 +546,17 @@ export default function UserPage() {
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button
-                    variant="outlined"
+                  <CommonButton
+                    variant="outline"
                     type="button"
                     onClick={handleModalClose}
                   >
                     Cancel
-                  </Button>
+                  </CommonButton>
 
-                  <Button
-                    disabled={isSubmitting}
-                    variant="contained"
-                    type="submit"
-                  >
+                  <CommonButton disabled={isSubmitting} type="submit">
                     {editingUser ? "Update" : "Save"}
-                  </Button>
+                  </CommonButton>
                 </div>
               </form>
             </div>
@@ -593,15 +590,9 @@ export default function UserPage() {
                   </Select>
                 </FormControl>
               </div>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={handleModalOpen}
-                sx={{ height: "36px" }}
-              >
+              <CommonButton startIcon={<AddIcon />} onClick={handleModalOpen}>
                 Add User
-              </Button>
+              </CommonButton>
             </div>
             <Paper sx={{ height: 450, width: "100%", mt: 2 }}>
               <DataGrid

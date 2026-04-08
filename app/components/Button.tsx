@@ -27,7 +27,7 @@ export default function CommonButton({
   endIcon,
 }: ButtonProps) {
   const baseStyle =
-    "rounded-lg font-medium transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-center text-center";
+    "rounded-lg font-medium transition-all duration-200 focus:outline-none flex items-center justify-center text-center";
 
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700",
@@ -51,7 +51,7 @@ export default function CommonButton({
         baseStyle,
         variants[variant],
         sizes[size],
-        disabled && "opacity-50 cursor-not-allowed",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
         className,
       )}
     >

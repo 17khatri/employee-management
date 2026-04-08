@@ -259,6 +259,11 @@ export const getHolidays = async () => {
     return response.data
 }
 
+export const upcomingHoliday = async () => {
+    const response = await axiosInstance.get("holidays/upcoming")
+    return response.data
+}
+
 export const addHolidays = async (data: {
     name: string
     date: Date;

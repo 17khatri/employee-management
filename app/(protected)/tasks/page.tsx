@@ -414,7 +414,7 @@ export default function TasksPage() {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
               <div className="flex justify-between items-center mb-1">
-                <h2 className="text-xl font-bold">Task Details</h2>
+                <h2 className="text-2xl font-bold">Task Details</h2>
                 <button
                   onClick={() => setViewTask(null)}
                   className="text-gray-400 hover:text-red-500 text-xl cursor-pointer"
@@ -423,26 +423,26 @@ export default function TasksPage() {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm text-gray-500">Task Name</p>
-                  <p className="font-semibold">{viewTask?.title}</p>
+                <div className="text-sm">
+                  <p className="text-gray-500">Task Name</p>
+                  <p>{viewTask?.title}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Project</p>
-                  <p className="font-semibold">{viewTask?.projectId?.title}</p>
+                <div className="text-sm">
+                  <p className="text-gray-500">Project</p>
+                  <p>{viewTask?.projectId?.title}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <p className="font-semibold">{viewTask?.status}</p>
+                <div className="text-sm">
+                  <p className="text-gray-500">Status</p>
+                  <p>{viewTask?.status}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Estimation</p>
-                  <p className="font-semibold">{viewTask?.estimationHours}</p>
+                <div className="text-sm">
+                  <p className="text-gray-500">Estimation</p>
+                  <p>{viewTask?.estimationHours}</p>
                 </div>
               </div>
-              <div className="mt-3">
-                <p className="text-sm text-gray-500">Description</p>
-                <p className="font-semibold">{viewTask?.description}</p>
+              <div className="mt-3 text-sm">
+                <p className="text-gray-500">Description</p>
+                <p>{viewTask?.description}</p>
               </div>
             </div>
           </div>

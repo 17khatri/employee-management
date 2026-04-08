@@ -11,6 +11,7 @@ import {
   Settings as SettingsIcon,
   AccessAlarm as AccessAlarmIcon,
 } from "@mui/icons-material";
+import PaymentIcon from "@mui/icons-material/Payment";
 import CastleIcon from "@mui/icons-material/Castle";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import ListAltIcon from "@mui/icons-material/ListAlt";
@@ -168,6 +169,16 @@ export default function Sidebar() {
             Work Plan
           </Link>
         )}
+
+        <Link
+          href="/cart"
+          className={`block hover:bg-gray-300 p-2 text-sm rounded ${pathname === "/cart" ? "bg-gray-300 text-gray-800" : ""}`}
+        >
+          <PaymentIcon
+            className={`${pathname === "/cart" ? "text-red-500" : ""} inline mr-3`}
+          />
+          Cart
+        </Link>
 
         <div
           onClick={handleLogout}

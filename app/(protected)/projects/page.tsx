@@ -184,6 +184,7 @@ export default function ProjectsPage() {
       field: "description",
       headerName: "Description",
       flex: 1,
+      renderCell: (params) => <p>{params.row.description || "N/A"}</p>,
     },
     {
       field: "actions",
@@ -240,7 +241,7 @@ export default function ProjectsPage() {
       headerName: "Assigned To",
       flex: 1,
       valueGetter: (value, row) =>
-        `${row.assignedTo.userId.firstName || ""} ${row.assignedTo.userId.firstName || ""}`,
+        `${row.assignedTo.userId.firstName || ""} ${row.assignedTo.userId.lastName || ""}`,
     },
   ];
 
@@ -316,7 +317,8 @@ export default function ProjectsPage() {
                   <strong>Title:</strong> {viewProject.title}
                 </p>
                 <p>
-                  <strong>Description:</strong> {viewProject.description}
+                  <strong>Description:</strong>{" "}
+                  {viewProject.description || "N/A"}
                 </p>
               </div>
 
@@ -327,23 +329,21 @@ export default function ProjectsPage() {
                 </h3>
 
                 {viewProject.tasks && viewProject.tasks.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Paper sx={{ height: 250, width: "100%", mt: 1 }}>
-                      <DataGrid
-                        rows={viewProject.tasks}
-                        columns={taskColumns}
-                        getRowId={(row) => row._id}
-                        pageSizeOptions={[3, 5]}
-                        initialState={{
-                          pagination: {
-                            paginationModel: { page: 0, pageSize: 3 },
-                          },
-                        }}
-                        disableRowSelectionOnClick
-                        density="compact"
-                      />
-                    </Paper>
-                  </div>
+                  <Paper sx={{ height: 250, width: "100%", mt: 1 }}>
+                    <DataGrid
+                      rows={viewProject.tasks}
+                      columns={taskColumns}
+                      getRowId={(row) => row._id}
+                      pageSizeOptions={[3, 5]}
+                      initialState={{
+                        pagination: {
+                          paginationModel: { page: 0, pageSize: 3 },
+                        },
+                      }}
+                      disableRowSelectionOnClick
+                      density="compact"
+                    />
+                  </Paper>
                 ) : (
                   <p className="text-gray-500 text-sm">No tasks available.</p>
                 )}

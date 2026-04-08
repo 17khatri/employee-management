@@ -58,6 +58,7 @@ export default function LeavesPage() {
   const [editingLeave, setEditingLeave] = useState<Leaves | null>(null);
   const [openPopup, setOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const today = new Date().toLocaleDateString("en-CA");
   const user = useSelector((state: RootState) => state.auth?.user);
   const {
     handleSubmit,
@@ -257,6 +258,18 @@ export default function LeavesPage() {
       flex: 1,
       renderCell: (params) => {
         const leave = params.row;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const leaveDate = leave.date ? new Date(leave.date) : null;
+        if (leaveDate) leaveDate.setHours(0, 0, 0, 0);
+
+        const isPastDate = leaveDate ? leaveDate < today : false;
+
+        const isDisabled =
+          leave.leaveStatus === "Rejected" ||
+          leave.leaveStatus === "Approved" ||
+          isPastDate;
 
         if (user?.role === "admin") {
           return (
@@ -306,7 +319,11 @@ export default function LeavesPage() {
         if (user?.role === "employee") {
           return (
             <div className="flex gap-2 items-center h-full">
-              <CommonButton variant="outline" onClick={() => handleEdit(leave)}>
+              <CommonButton
+                disabled={isDisabled}
+                variant="outline"
+                onClick={() => handleEdit(leave)}
+              >
                 Edit
               </CommonButton>
 

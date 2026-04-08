@@ -30,8 +30,11 @@ import {
 import TextField from "@mui/material/TextField";
 import toast from "react-hot-toast";
 import LogOutPopup from "./LogOutPopup";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import CommonButton from "./Button";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 interface User {
   firstName: string;
@@ -47,10 +50,20 @@ interface User {
       _id?: string;
       name?: string;
     };
-    salary?: number;
+    birthDate?: Dayjs | null;
     profilePhoto?: string;
   };
 }
+
+import dayjs, { Dayjs } from "dayjs";
+
+type FormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  birthDate: Dayjs | null;
+};
 
 export default function Header() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -84,14 +97,16 @@ export default function Header() {
   const {
     register,
     handleSubmit,
+    control,
+    reset,
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<FormValues>({
     defaultValues: {
-      firstName: loggedInUser?.firstName,
-      lastName: loggedInUser?.lastName,
-      email: loggedInUser?.email,
-      phone: loggedInUser?.employee?.phone,
-      salary: loggedInUser?.employee?.salary,
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      birthDate: null,
     },
   });
 
@@ -154,7 +169,10 @@ export default function Header() {
       formData.append("lastName", data.lastName);
       formData.append("email", data.email);
       formData.append("phone", data.phone);
-      formData.append("salary", data.salary);
+      formData.append(
+        "birthDate",
+        data.birthDate ? data.birthDate.toISOString() : "",
+      );
 
       if (selectedFile) {
         formData.append("profilePhoto", selectedFile);
@@ -216,6 +234,16 @@ export default function Header() {
     try {
       const user = await getLoggedInUser();
       setLoggedInUser(user);
+
+      reset({
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        phone: user?.employee?.phone,
+        birthDate: user?.employee?.birthDate
+          ? dayjs(user?.employee?.birthDate)
+          : null,
+      });
     } catch (error) {}
   };
 
@@ -413,12 +441,15 @@ export default function Header() {
               fullWidth
               margin="normal"
               label="First Name"
-              defaultValue={loggedInUser?.firstName}
               {...register("firstName", {
                 required: "First name is required",
                 minLength: {
                   value: 2,
                   message: "Minimum 2 characters required",
+                },
+                maxLength: {
+                  value: 7,
+                  message: "Maximum 7 characters required",
                 },
               })}
               error={!!errors.firstName}
@@ -429,7 +460,6 @@ export default function Header() {
               fullWidth
               margin="normal"
               label="Last Name"
-              defaultValue={loggedInUser?.lastName}
               {...register("lastName", {
                 required: "Last name is required",
               })}
@@ -442,7 +472,6 @@ export default function Header() {
               margin="normal"
               label="Email"
               disabled
-              defaultValue={loggedInUser?.email}
               {...register("email", {
                 required: "Email is required",
                 pattern: {
@@ -461,7 +490,6 @@ export default function Header() {
                   fullWidth
                   margin="normal"
                   label="Phone"
-                  defaultValue={loggedInUser?.employee?.phone}
                   {...register("phone", {
                     required: "Phone number is required",
                     pattern: {
@@ -473,21 +501,29 @@ export default function Header() {
                   helperText={errors.phone?.message}
                 />
 
-                <TextField
-                  fullWidth
-                  margin="normal"
-                  label="Salary"
-                  type="number"
-                  defaultValue={loggedInUser?.employee?.salary}
-                  {...register("salary", {
-                    required: "Salary is required",
-                    min: {
-                      value: 1,
-                      message: "Salary must be greater than 0",
-                    },
-                  })}
-                  error={!!errors.salary}
-                  helperText={errors.salary?.message}
+                <Controller
+                  name="birthDate"
+                  control={control}
+                  rules={{ required: "Birth Date is required" }}
+                  render={({ field }) => (
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Select Birth Date*"
+                        format="DD-MM-YYYY"
+                        disableFuture
+                        value={field.value ?? null}
+                        onChange={(newValue) => field.onChange(newValue)}
+                        slotProps={{
+                          textField: {
+                            size: "small",
+                            fullWidth: true,
+                            error: !!errors.birthDate,
+                            helperText: errors.birthDate?.message,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
+                  )}
                 />
               </>
             )}

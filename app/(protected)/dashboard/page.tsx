@@ -13,6 +13,7 @@ import {
   getEmployeesTask,
   getWorkPlans,
   editTask,
+  upcomingHoliday,
 } from "@/app/services/auth.service";
 import { RootState } from "@/app/store/store";
 import { useEffect, useState } from "react";
@@ -116,6 +117,12 @@ interface LogFormValues {
   status: string;
 }
 
+interface Holidays {
+  _id: string;
+  name: string;
+  date: Date;
+}
+
 export default function DashboardPage() {
   const [employeesOnLeave, setEmployeesOnLeave] = useState<TodayLeave[]>([]);
   const [birthdays, setBirthdays] = useState<any>([]);
@@ -126,6 +133,7 @@ export default function DashboardPage() {
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [workplan, setWorkPlan] = useState<Workplan[]>([]);
   const [logTask, setLogTask] = useState<Workplan | null>(null);
+  const [upcomingHolidays, setUpcomingHolidays] = useState<Holidays[]>([]);
   const user = useSelector((state: RootState) => state?.auth.user);
   const {
     handleSubmit: handleAttendanceSubmit,
@@ -169,6 +177,19 @@ export default function DashboardPage() {
       fetchWorkPlans();
     }
   }, [user?.role]);
+
+  const fetchUpcomingHolidays = async () => {
+    try {
+      const response = await upcomingHoliday();
+      setUpcomingHolidays(response);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUpcomingHolidays();
+  }, []);
 
   const fetchEmployeesonLeave = async () => {
     try {
@@ -853,6 +874,41 @@ export default function DashboardPage() {
 
                     <div className="px-4 py-2 rounded-full text-sm font-semibold bg-pink-100 text-pink-600">
                       🎉 Birthday
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Holiday Section */}
+          <div className="mt-12">
+            <h2 className="text-2xl font-semibold mb-6">
+              🎈 Upcoming Holidays
+            </h2>
+
+            {upcomingHolidays.length === 0 ? (
+              <div className="bg-white/70 backdrop-blur-lg border border-gray-200 rounded-2xl p-8 text-center shadow">
+                <p className="text-lg text-gray-600">No holidays this month</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {upcomingHolidays.map((holiday: any) => (
+                  <div
+                    key={holiday._id}
+                    className="bg-white rounded-2xl shadow-md p-6 flex justify-between items-center hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-center text-xl font-bold shadow-md">
+                        {holiday.name?.charAt(0)}
+                      </div>
+
+                      <div>
+                        <p className="text-lg font-semibold">{holiday.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(holiday.date).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -24,7 +24,6 @@ import { RootState } from "@/app/store/store";
 import { useSelector } from "react-redux";
 import NumberField from "@/app/components/NumberField";
 import { TASK_STATUS_VALUES } from "@/app/constants/task";
-import Button from "@mui/material/Button";
 import toast from "react-hot-toast";
 import { GridColDef } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
@@ -175,6 +174,7 @@ export default function WorkPlanPage() {
       if (addToWorkPlan === true) {
         await addWorkPlan(payload);
         toast.success("Workplan added successfully");
+        setSelectedTasks((prev) => [...prev, response._id]);
       }
     } catch (error: any) {
       console.error(error);
@@ -301,30 +301,30 @@ export default function WorkPlanPage() {
       headerName: "EST. Hours",
       flex: 1,
     },
-    {
-      field: "todayEstimation",
-      headerName: "Estimation for today (hours)",
-      flex: 1,
-      renderCell: (params) => {
-        const taskId = params.row._id;
+    // {
+    //   field: "todayEstimation",
+    //   headerName: "Estimation for today (hours)",
+    //   flex: 1,
+    //   renderCell: (params) => {
+    //     const taskId = params.row._id;
 
-        return (
-          <TextField
-            size="small"
-            type="number"
-            value={todayEstimation[taskId] || ""}
-            onChange={(e) => {
-              const value = Number(e.target.value);
+    //     return (
+    //       <TextField
+    //         size="small"
+    //         type="number"
+    //         value={todayEstimation[taskId] || ""}
+    //         onChange={(e) => {
+    //           const value = Number(e.target.value);
 
-              setTodayEstimation((prev) => ({
-                ...prev,
-                [taskId]: value,
-              }));
-            }}
-          />
-        );
-      },
-    },
+    //           setTodayEstimation((prev) => ({
+    //             ...prev,
+    //             [taskId]: value,
+    //           }));
+    //         }}
+    //       />
+    //     );
+    //   },
+    // },
   ];
 
   const undoneTasks = tasks.filter(

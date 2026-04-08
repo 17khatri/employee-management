@@ -2,7 +2,7 @@ import "@/models";
 import Employee from "@/models/Employee";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import { verifyAdmin, verifyUser } from "@/lib/authMiddleware";
+import { verifyUser } from "@/lib/authMiddleware";
 
 export async function GET(req) {
   const auth = verifyUser(req);

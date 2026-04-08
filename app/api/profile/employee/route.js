@@ -27,7 +27,6 @@ export async function PATCH(req) {
     const lastName = formData.get("lastName");
     const email = formData.get("email");
     const phone = formData.get("phone");
-    const salary = formData.get("salary");
     const birthDate = formData.get("birthDate");
     const gender = formData.get("gender");
     const file = formData.get("profilePhoto");
@@ -100,7 +99,6 @@ export async function PATCH(req) {
 
     const updateEmployeeData = {
       phone,
-      salary,
       birthDate,
       gender,
     };
@@ -122,8 +120,8 @@ export async function PATCH(req) {
       email: updatedUserDetails.email,
       role: updatedUserDetails.role,
       phone: updatedEmployeeDetails.phone,
-      salary: updatedEmployeeDetails.salary,
       profilePhoto: updatedEmployeeDetails.profilePhoto,
+      birthDate: updatedEmployeeDetails.birthDate,
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -3,7 +3,6 @@ import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Task from "@/models/Task";
 import Employee from "@/models/Employee";
-import WorkPlan from "@/models/WorkPlan";
 import { verifyUser } from "@/lib/authMiddleware";
 
 // GET all tasks

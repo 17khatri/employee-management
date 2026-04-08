@@ -27,16 +27,29 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import dayjs from "dayjs";
+import Autocomplete from "@mui/material/Autocomplete";
 
 export interface CalendarEvent {
-  _id: string;
-  createdBy: string;
+  id: string;
   title: string;
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  attendees: string[];
+  start: string;
+  end: string;
+  extendedProps: {
+    _id: string;
+    createdBy: {
+      _id: string;
+      email: string;
+      name: string;
+      id: string;
+    };
+    title: string;
+    description: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    attendees: string[];
+    deletedAt: null;
+  };
 }
 
 interface MeetingFormData {
@@ -82,7 +95,7 @@ export default function Calendar() {
     defaultValues: {
       title: "",
       description: "",
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toLocaleDateString("en-CA").split("T")[0],
       startTime: "",
       endTime: "",
       attendees: [],
@@ -120,14 +133,16 @@ export default function Calendar() {
 
   const calendarEvents = events.map((event) => {
     return {
-      id: event._id,
+      id: event.extendedProps._id,
       title: event.title,
-      start: new Date(event.startTime),
-      end: new Date(event.endTime),
-      date: event.date,
+      start: new Date(event.extendedProps.startTime),
+      end: new Date(event.extendedProps.endTime),
+      date: event.extendedProps.date,
       extendedProps: event,
     };
   });
+
+  console.log(calendarEvents);
 
   const holidayEvents = holidays.map((holiday) => {
     const holidayDate = new Date(holiday.date);
@@ -203,13 +218,13 @@ export default function Calendar() {
         }}
         eventClick={(info) => {
           const meeting = info.event.extendedProps as CalendarEvent;
-          setEditingId(meeting._id);
+          setEditingId(meeting.id);
           setValue("title", meeting.title);
-          setValue("description", meeting.description);
-          setValue("date", meeting.date.split("T")[0]);
-          setValue("startTime", meeting.startTime);
-          setValue("endTime", meeting.endTime);
-          setValue("attendees", meeting.attendees);
+          setValue("description", meeting.extendedProps?.description);
+          setValue("date", meeting.extendedProps?.date.split("T")[0]);
+          setValue("startTime", meeting.extendedProps?.startTime);
+          setValue("endTime", meeting.extendedProps?.endTime);
+          setValue("attendees", meeting.extendedProps?.attendees);
           setIsModalOpen(true);
         }}
         eventDrop={async (info) => {
@@ -280,35 +295,37 @@ export default function Calendar() {
                   margin="dense"
                   error={!!errors.attendees}
                 >
-                  <InputLabel size="small" id="attendees-label">
-                    Attendees*
-                  </InputLabel>
-
                   <Controller
                     name="attendees"
                     control={control}
                     defaultValue={[]}
                     rules={{ required: "Select at least one attendee" }}
-                    render={({ field }) => (
-                      <Select
+                    render={({ field, fieldState }) => (
+                      <Autocomplete
                         multiple
-                        labelId="attendees-label"
-                        label="attendees"
-                        {...field}
                         size="small"
-                      >
-                        {users
-                          .filter((u) => u._id !== user?.id)
-                          .map((u) => (
-                            <MenuItem key={u._id} value={u._id}>
-                              {u.firstName} {u.lastName}
-                            </MenuItem>
-                          ))}
-                      </Select>
+                        options={users.filter((u) => u._id !== user?.id)}
+                        getOptionLabel={(option) =>
+                          `${option.firstName} ${option.lastName}`
+                        }
+                        value={
+                          users.filter((u) => field.value?.includes(u._id)) ||
+                          []
+                        }
+                        onChange={(_, newValue) =>
+                          field.onChange(newValue.map((u) => u._id))
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Attendees*"
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                        )}
+                      />
                     )}
                   />
-
-                  <FormHelperText>{errors.attendees?.message}</FormHelperText>
                 </FormControl>
               </div>
               <div className="mb-3">

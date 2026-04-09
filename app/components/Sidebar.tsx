@@ -15,6 +15,7 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import CastleIcon from "@mui/icons-material/Castle";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import ListAltIcon from "@mui/icons-material/ListAlt";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import WorkspacesIcon from "@mui/icons-material/Workspaces";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import { useDispatch, useSelector } from "react-redux";
@@ -178,6 +179,16 @@ export default function Sidebar() {
             className={`${pathname === "/cart" ? "text-red-500" : ""} inline mr-3`}
           />
           Cart
+        </Link>
+
+        <Link
+          href="/pdf"
+          className={`block hover:bg-gray-300 p-2 text-sm rounded ${pathname === "/pdf" ? "bg-gray-300 text-gray-800" : ""}`}
+        >
+          <PictureAsPdfIcon
+            className={`${pathname === "/pdf" ? "text-red-500" : ""} inline mr-3`}
+          />
+          PDF Operations
         </Link>
 
         <div
